@@ -29,3 +29,17 @@ FORMS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+DISTFILES +=
+
+RESOURCES += \
+    src.qrc
+
+VERSION = 1.0
+
+DEFINES += APP_VERSION=\\\"$$VERSION\\\"
+
+QMAKE_CXXFLAGS+=/execution-charset:utf-8
+QMAKE_TARGET_PRODUCT = "CSGO工具箱"
+
+RC_ICONS = logo.ico
