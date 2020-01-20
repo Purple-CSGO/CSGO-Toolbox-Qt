@@ -88,6 +88,16 @@
           <string>一键生成CSGO集锦</string>
          </property>
         </widget>
+        <widget class="QPlainTextEdit" name="debug">
+         <property name="geometry">
+          <rect>
+           <x>30</x>
+           <y>30</y>
+           <width>321</width>
+           <height>411</height>
+          </rect>
+         </property>
+        </widget>
        </widget>
        <widget class="QWidget" name="TabInfo">
         <property name="minimumSize">

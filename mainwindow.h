@@ -5,11 +5,14 @@
 #include <QString>
 #include <QFile>
 #include <QFileDialog>
-//#include <QFileInfo>
 #include <QProcess>
 #include <QMessageBox>
 #include <QSettings>
 #include <QCloseEvent>
+#include <QApplication>
+#include <QSplashScreen>
+#include <QDateTime>
+#include <QTextEdit>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -22,6 +25,7 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    void stall(int time);
 
 private:
     Ui::MainWindow *ui;
@@ -29,5 +33,9 @@ private:
     void readSetting();
     void writeSetting();
     void closeEvent(QCloseEvent *e);
+    void getPaths();
+    QString getProcessPath(QString processName);
+    QString cmd(QString command);
+
 };
 #endif // MAINWINDOW_H

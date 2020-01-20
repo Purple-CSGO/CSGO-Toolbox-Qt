@@ -4,6 +4,7 @@
 QString steamPath = "";
 QString launcherPath = "";
 QString csgoPath = "";
+QString steamID = "";
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -12,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     readSetting();
+    getPaths();
 }
 
 MainWindow::~MainWindow()
@@ -67,4 +69,98 @@ void MainWindow::writeSetting()
     IniWrite->endGroup();
     //写入完成后删除指针
     delete IniWrite;
+}
+
+void MainWindow::stall(int time){
+    QTime dieTime = QTime::currentTime().addMSecs(time);
+    while( QTime::currentTime() < dieTime )
+      QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+}
+
+void MainWindow::getPaths()
+{
+/*
+    //设置默认steam路径，如果匹配直接设定steamPath
+    QStringList defSteamPath;
+    defSteamPath
+            <<  QStringLiteral("C:\\Program Files (x86)\\Steam")
+            ;
+
+    for(int i = 0; i< defSteamPath.size(); i++)
+    {
+        if( QFile::exists( defSteamPath.at(i) ) ){
+            steamPath = defSteamPath.at(i);
+            break;
+        }
+    }
+*/
+
+    //getProcessPath("qq.exe");
+
+    QString command = "explorer.exe \"steam://rungameid/730\"";
+    cmd(command);
+
+    do{
+        steamPath = getProcessPath("steam.exe");
+        csgoPath = getProcessPath("csgo.exe");
+        stall(100);
+    }while( !QFile::exists( steamPath ) | !QFile::exists( csgoPath ) );
+
+    command = "taskkill /f /t /im csgo.exe";
+    cmd(command);
+
+    ui->debug->setPlainText( csgoPath + " + " + steamPath );
+    //获得计算机名
+    //QString machineName = QHostInfo::localHostName();
+    //ui->debug->setPlainText( machineName );
+    //ui->debug->setPlainText( QCoreApplication::applicationDirPath() );    //exe所在路径
+    //ui->debug->setPlainText( QDir::currentPath() ); //项目路径 当前路径
+/*     if(QFile::exists(steamPath)) ;
+
+      if( tPath.endsWith("windeployqt.exe",Qt::CaseSensitive) ){
+        steamPath.replace("file:///","");        //去除拖拽产生的前缀
+
+        if( !QString(tPath).isEmpty() )
+
+    QProcess p;
+    QString command = toolPath + " " + deployPath + " " + "-no-angle -no-opengl-sw";
+    p.start(command);
+    p.waitForStarted();
+    p.closeWriteChannel();  //关闭写通道 ，解决未响应问题
+    p.waitForFinished();
+    QString OutMsg = QString::fromLocal8Bit(p.readAllStandardOutput());
+    QString ErrMsg = QString::fromLocal8Bit(p.readAllStandardError());
+*/
+}
+
+QString MainWindow::getProcessPath(QString processName)
+{
+    //processid,name
+    processName = "wmic process where name='" + processName + "' get executablepath";
+    processName = cmd(processName);
+    processName = processName.replace("ExecutablePath", "");
+    processName = processName.replace("\r", "");
+    processName = processName.replace("\n", "");
+    processName = processName.simplified();
+    //Debug
+    ui->debug->setPlainText( processName );
+    return processName;
+}
+
+//调用CMD控制台指令并返回结果，正确执行时返回标准输出通道的内容，执行出错时返回错误通道的内容
+QString MainWindow::cmd(QString command)
+{
+    QProcess p;
+    QString temp;
+    p.start(command);
+    p.closeWriteChannel();  //关闭写通道 ，解决未响应问题
+    p.waitForFinished();
+
+    temp = QString::fromLocal8Bit(p.readAllStandardOutput());
+    temp = temp.replace("\r", "");
+    temp = temp.replace("\n", "");
+    if( QString(temp).isEmpty() )
+        temp = QString::fromLocal8Bit(p.readAllStandardError());
+    ui->debug->setPlainText( command );
+    return temp;
 }
