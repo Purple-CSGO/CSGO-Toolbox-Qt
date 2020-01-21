@@ -13,7 +13,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     readSetting();
-    getPaths();
+    //getPaths();
+    sharecodeTransform();
 }
 
 MainWindow::~MainWindow()
@@ -41,10 +42,6 @@ void MainWindow::readSetting()
 
     //读入完成后删除指针
     delete iniRead;
-
-    //显示到ui中
-    //ui->steamPath->setText(steamPath);
-    //ui->launcherPath->setText(launcherPath);
 }
 
 //写入设置
@@ -79,6 +76,24 @@ void MainWindow::stall(int time){
 
 void MainWindow::getPaths()
 {
+    //第一步 读取设置之后检查各种Path变量 如果成功则return
+    //第二布 尝试默认路径 如果成功则return
+    //第三步 读取注册表中路径 如果成功则return      √调试成功
+//    for /f "tokens=1,2,* " %%i in ('REG QUERY "HKEY_CURRENT_USER\SOFTWARE\Valve\Steam" ^| find /i "SteamPath"') do set "SteamPath=%%k"
+//HKEY_CURRENT_USER\SOFTWARE\Valve\Steam 位置查询SteamExe  SteamPath是文件夹的路径
+
+    #define RUN_KEY "HKEY_CURRENT_USER\\SOFTWARE\\Valve\\Steam"
+    QSettings *pReg = new QSettings(RUN_KEY, QSettings::NativeFormat);
+
+        //pReg->setValue("key", "value"); //设置注册表值
+
+        QString path = pReg->value("SteamExe").toString(); //读取注册表值
+        //v.toString();
+        delete pReg;
+
+        ui->debug->setPlainText(path);
+    //第四步 调用自动获取路径的算法（从进程列表中获得） 如果成功则return
+    //第五步 初始化失败 用户手动选择路径
 /*
     //设置默认steam路径，如果匹配直接设定steamPath
     QStringList defSteamPath;
@@ -96,7 +111,7 @@ void MainWindow::getPaths()
 */
 
     //getProcessPath("qq.exe");
-
+/*
     QString command = "explorer.exe \"steam://rungameid/730\"";
     cmd(command);
 
@@ -109,7 +124,8 @@ void MainWindow::getPaths()
     command = "taskkill /f /t /im csgo.exe";
     cmd(command);
 
-    ui->debug->setPlainText( csgoPath + " + " + steamPath );
+    ui->debug->setPlainText( csgoPath + " + " + steamPath );*/
+
     //获得计算机名
     //QString machineName = QHostInfo::localHostName();
     //ui->debug->setPlainText( machineName );
@@ -163,4 +179,92 @@ QString MainWindow::cmd(QString command)
         temp = QString::fromLocal8Bit(p.readAllStandardError());
     ui->debug->setPlainText( command );
     return temp;
+}
+
+void MainWindow::solveVacIssue()
+{
+/*
+思路：
+    1. 关闭steam或者国服启动器
+    2. 开启 Network Connections
+        开启 Remote Access Connection Manager
+        开启 Telephony
+        开启 Windows Firewall
+   3. 恢复 Data Execution Prevention 启动设置为默认值
+   4. 获取steam或国服启动器目录（Done）
+   5. 重装Steam Services
+            steamservice  /uninstall
+            steamservice  /install
+        # 等待出现"Add firewall exception failed for steamservice.exe"
+   6. 启动Steam Services服务
+            start "Steam Client Service"
+   7. 其他诸如设置快捷方式 打开网吧模式
+            ? start /high steam -console -cafeapplaunch -forceservice
+*/
+}
+
+// 转换DEMO分享代码 获得真实下载链接
+void MainWindow::sharecodeTransform()
+{
+    const QString DICTIONARY = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefhijkmnopqrstuvwxyz23456789";
+    //0. 读入分享代码
+    QString ShareCode = "steam://rungame/730/76561202255233023/+csgo_download_match%20CSGO-52um8-FaZvF-Ajutm-hCoKH-2JedJ";
+
+    //1. 去掉分享代码的无用信息
+    ShareCode = "CSGO-52um8-FaZvF-Ajutm-hCoKH-2JedJ";
+    QString("s");
+    //2. 正则表达式匹配
+
+    const QString ShareCodePattern = "^CSGO(-?[\\w]{5}){5}$";
+    QRegExp reg( ShareCodePattern );     //正则表达式
+
+    if( ShareCode.count("CSGO-") == 1 ){
+        ShareCode.remove(0, ShareCode.lastIndexOf("CSGO-") );
+        ShareCode.replace("CSGO-","");
+        ShareCode.replace("-", "");
+        ui->debug->setPlainText( ShareCode );
+    }
+    else    //>1
+        ui->debug->setPlainText("有多个链接，暂不支持");
+    //else  =0 链接不正确
+
+    //big = big * 字典长度 + 当前字符索引位置
+    BigUnsigned big = 0;
+    for(int i = ShareCode.length() - 1; i >= 0; i++)
+        big = big * DICTIONARY.length() + DICTIONARY.indexOf( ShareCode.at(i) );
+
+    //QByteArray all = QArray(big);
+
+    //if(reg.exactMatch( ShareCode )){
+    //    ui->debug->setPlainText("1");
+    //}
+    //else
+
+
+
+    //steam://rungame/730/76561202255233023/+csgo_download_match%20CSGO-52um8-FaZvF-Ajutm-hCoKH-2JedJ
+
+
+    //通过有用信息提取三个参数
+    //CSGO-52um8-FaZvF-Ajutm-hCoKH-2JedJ
+    //注：满足正则表达式之后trim掉CSGO-之前和dJ后面的信息
+
+
+
+
+
+
+    //调用boiler.exe 给cmd函数传参
+    //boiler.exe path_to_output_file [matchid outcomeid tokenid]
+    //boiler.exe match.dat 3392010210108244359 3392017082055917700 18964
+
+    //在match.dat中读取某行的参数***
+
+    //无符号64位整型
+    quint64 MatchId =0, OutcomeId = 0, TokenId = 0;
+
+    MatchId =0, OutcomeId =
+            0, TokenId = 0;
+
+
 }

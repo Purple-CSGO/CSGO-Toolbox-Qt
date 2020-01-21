@@ -13,6 +13,10 @@
 #include <QSplashScreen>
 #include <QDateTime>
 #include <QTextEdit>
+#include <QByteArray>
+
+//包含BigInteger库 来自https://github.com/benlau/biginteger
+#include "biginteger-1.0.2/BigIntegerLibrary.hh"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -34,8 +38,9 @@ private:
     void writeSetting();
     void closeEvent(QCloseEvent *e);
     void getPaths();
+    void solveVacIssue();
     QString getProcessPath(QString processName);
     QString cmd(QString command);
-
+    void sharecodeTransform();
 };
 #endif // MAINWINDOW_H
