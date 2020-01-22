@@ -16,24 +16,10 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    BigIntegerLib/BigInteger.cc \
-    BigIntegerLib/BigIntegerAlgorithms.cc \
-    BigIntegerLib/BigIntegerUtils.cc \
-    BigIntegerLib/BigUnsigned.cc \
-    BigIntegerLib/BigUnsignedInABase.cc \
-    BigIntegerLib/bigintegermath.cpp \
-    BigIntegerLib/bigintegerobject.cpp \
     main.cpp \
     mainwindow.cpp
 
 HEADERS += \
-    BigIntegerLib/BigIntegerAlgorithms.hh \
-    BigIntegerLib/BigIntegerLibrary.hh \
-    BigIntegerLib/BigIntegerUtils.hh \
-    BigIntegerLib/BigUnsigned.hh \
-    BigIntegerLib/BigUnsignedInABase.hh \
-    BigIntegerLib/bigintegermath.h \
-    BigIntegerLib/bigintegerobject.h \
     mainwindow.h
 
 FORMS += \
@@ -59,5 +45,6 @@ DEFINES += APP_VERSION=\\\"$$VERSION\\\"
 
 QMAKE_TARGET_PRODUCT = "CSGO ToolBox"
 QMAKE_PROJECT_NAME = "CSGO工具箱"
+#QMAKE_LFLAGS += /MANIFESTUAC:"level='requireAdministrator'uiAccess='false'"
 
 RC_ICONS = logo.ico

@@ -91,11 +91,42 @@
         <widget class="QPlainTextEdit" name="debug">
          <property name="geometry">
           <rect>
-           <x>30</x>
-           <y>30</y>
-           <width>321</width>
-           <height>411</height>
+           <x>10</x>
+           <y>10</y>
+           <width>381</width>
+           <height>381</height>
           </rect>
+         </property>
+        </widget>
+        <widget class="QTextEdit" name="dragArea">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>400</y>
+           <width>381</width>
+           <height>71</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Sarasa Gothic SC</family>
+           <pointsize>32</pointsize>
+          </font>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Plain</enum>
+         </property>
+         <property name="verticalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="horizontalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="cursorWidth">
+          <number>0</number>
+         </property>
+         <property name="placeholderText">
+          <string>         拖拽区域</string>
          </property>
         </widget>
        </widget>
