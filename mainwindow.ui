@@ -75,26 +75,13 @@
         <attribute name="title">
          <string>主要</string>
         </attribute>
-        <widget class="QPushButton" name="pushButton">
-         <property name="geometry">
-          <rect>
-           <x>120</x>
-           <y>180</y>
-           <width>141</width>
-           <height>71</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>一键生成CSGO集锦</string>
-         </property>
-        </widget>
         <widget class="QPlainTextEdit" name="debug">
          <property name="geometry">
           <rect>
            <x>10</x>
            <y>10</y>
            <width>381</width>
-           <height>381</height>
+           <height>251</height>
           </rect>
          </property>
         </widget>
@@ -127,6 +114,16 @@
          </property>
          <property name="placeholderText">
           <string>         拖拽区域</string>
+         </property>
+        </widget>
+        <widget class="QTableView" name="userdata">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>270</y>
+           <width>381</width>
+           <height>121</height>
+          </rect>
          </property>
         </widget>
        </widget>

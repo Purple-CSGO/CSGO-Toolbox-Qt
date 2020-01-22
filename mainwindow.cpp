@@ -13,8 +13,15 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     readSetting();
-    //getPaths();
-    sharecodeTransform();
+    getPaths();
+    //sharecodeTransform();
+    //solveVacIssue(steamPath);
+    //ui->debug->appendPlainText( cmd("cmd.exe /c cd D:/") );
+
+    //cmd("explorer \"" + steamPath.replace("steam.exe", "config\\") + "\"");
+    //getSteamID();
+
+    //ui->debug->appendPlainText( t );
 }
 
 MainWindow::~MainWindow()
@@ -42,6 +49,14 @@ void MainWindow::readSetting()
 
     //读入完成后删除指针
     delete iniRead;
+
+    //如果路径不存在则置空
+    if( !QFile::exists( steamPath ) || !steamPath.endsWith("steam.exe", Qt::CaseInsensitive ) )
+        steamPath = "";
+    if( !QFile::exists( launcherPath ) || !launcherPath.endsWith("csgolauncher.exe", Qt::CaseInsensitive ) )
+        launcherPath = "";
+    if( !QFile::exists( csgoPath ) || !csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive ) )
+        csgoPath = "";
 }
 
 //写入设置
@@ -51,8 +66,17 @@ void MainWindow::writeSetting()
     //steamPath = ui->steamPath->text();
     //launcherPath = ui->launcherPath->text();
 
+    if( !QFile::exists( steamPath ) || !steamPath.endsWith("steam.exe", Qt::CaseInsensitive ) )
+        steamPath = "";
+    if( !QFile::exists( launcherPath ) || !launcherPath.endsWith("csgolauncher.exe", Qt::CaseInsensitive ) )
+        launcherPath = "";
+    if( !QFile::exists( csgoPath ) || !csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive ) )
+        csgoPath = "";
+
+    //ui->debug->setPlainText( steamPath );
     //写设置
     QSettings *IniWrite = new QSettings("./config.ini", QSettings::IniFormat);
+    IniWrite->setIniCodec("utf-8");     //解决乱码问题
 
     IniWrite->beginGroup("AppInfo");
     IniWrite->setValue("Name", qAppName());
@@ -87,11 +111,12 @@ void MainWindow::getPaths()
 
         //pReg->setValue("key", "value"); //设置注册表值
 
-        QString path = pReg->value("SteamExe").toString(); //读取注册表值
-        //v.toString();
-        delete pReg;
+    steamPath = pReg->value("SteamExe").toString(); //读取注册表值
+    //v.toString();
+    delete pReg;
 
-        ui->debug->setPlainText(path);
+        //ui->debug->setPlainText(steamPath);
+
     //第四步 调用自动获取路径的算法（从进程列表中获得） 如果成功则return
     //第五步 初始化失败 用户手动选择路径
 /*
@@ -150,7 +175,7 @@ QString MainWindow::getProcessPath(QString processName)
     processName = processName.replace("\n", "");
     processName = processName.simplified();
     //Debug
-    ui->debug->setPlainText( processName );
+    //ui->debug->setPlainText( processName );
     return processName;
 }
 
@@ -160,20 +185,42 @@ QString MainWindow::cmd(QString command)
     QProcess p;
     QString temp;
     p.start(command);
+    p.waitForStarted();
     p.closeWriteChannel();  //关闭写通道 ，解决未响应问题
     p.waitForFinished();
-
     temp = QString::fromLocal8Bit(p.readAllStandardOutput());
+    //ui->debug->appendPlainText(temp);
     temp = temp.replace("\r", "");
     temp = temp.replace("\n", "");
     if( QString(temp).isEmpty() )
         temp = QString::fromLocal8Bit(p.readAllStandardError());
-    //ui->debug->setPlainText( command );
+    //ui->debug->setPlainText(temp);
+    p.close();
+    return temp;
+}
+
+QString MainWindow::cmd_dir(QString command, QString dir)
+{
+    QProcess p;
+    QString temp;
+    p.setWorkingDirectory(dir);
+    p.start(command);
+    p.waitForStarted();
+    p.closeWriteChannel();  //关闭写通道 ，解决未响应问题
+    p.waitForFinished();
+    temp = QString::fromLocal8Bit(p.readAllStandardOutput());
+    //ui->debug->appendPlainText(temp);
+    temp = temp.replace("\r", "");
+    temp = temp.replace("\n", "");
+    if( QString(temp).isEmpty() )
+        temp = QString::fromLocal8Bit(p.readAllStandardError());
+    //ui->debug->setPlainText(temp);
+    p.close();
     return temp;
 }
 
 //修复VAC验证问题
-void MainWindow::solveVacIssue()
+void MainWindow::solveVacIssue(QString Path)
 {
 /*
 思路：
@@ -192,12 +239,87 @@ void MainWindow::solveVacIssue()
             start "Steam Client Service"
    7. 其他诸如设置快捷方式 打开网吧模式
             ? start /high steam -console -cafeapplaunch -forceservice
+
+    //1.
+    cmd("taskkill /F /IM Steam.exe");
+    cmd("taskkill /F /IM csgolauncher.exe");
+    //2.
+    cmd("sc config Netman start= AUTO");
+    cmd("sc start Netman");
+    cmd("sc config RasMan start= AUTO");
+    cmd("sc start RasMan");
+    cmd("sc config TapiSrv start= AUTO");
+    cmd("sc start TapiSrv");
+    cmd("sc config MpsSvc start= AUTO");
+    cmd("sc start MpsSvc");
+    cmd("netsh advfirewall set allprofiles state on");
+    //3.
+    cmd("bcdedit /deletevalue nointegritychecks");
+    cmd("bcdedit /deletevalue loadoptions");
+    cmd("bcdedit /debug off");
+    cmd("bcdedit /deletevalue nx");
+    //4.
+    if( !QFile::exists(Path) )
+        return;
+    //5.
+    steamservice  /uninstall
+    ping -n 3 127.0.0.1>nul
+    steamservice  /install
 */
+    //debug测试
+    ui->debug->appendPlainText( cmd("cd") );
+    ui->debug->appendPlainText( cmd("cd " + steamPath) );
+    ui->debug->appendPlainText( cmd("dir") );
+
+
+}
+
+QString MainWindow::search_and_cut(QString input, QString key)
+{   //剪切不掉相应的部分
+    QString t = input;
+    qint32 i = t.indexOf(key);
+    //ui->debug->appendPlainText();
+    if( i >= 0 )
+        input.remove(0, i + key.length() );
+    else
+            ui->debug->appendPlainText("GG");
+    ui->debug->appendPlainText(t);
+    return t;
+}
+
+QString MainWindow::get_until(QString input, QString end)
+{
+    return "";
+}
+
+QString MainWindow::getValue(QString input, QString key)
+{
+    return "";
 }
 
 //启动项修改: "Software" -> "730" -> "LaunchOptions" 利用String相关操作依次查找匹配的第一个串位置&删掉该串之前的内容
 //读取C:\Program Files (x86)\Steam\userdata\354813078\config\localconfig.vdf
 //CSGO没有安装好时没有"LaunchOptions" 这一项 手动在第一个"}"之前添加
+
+void MainWindow::getSteamID()
+{
+    QString fileName = steamPath;
+    fileName.replace("steam.exe" ,"config\\loginusers.vdf", Qt::CaseInsensitive );
+
+    QFile f( fileName );
+    if ( !f.exists() ) //文件不存在
+        return;
+    if ( !f.open(QIODevice::ReadOnly | QIODevice::Text) )
+        return;
+    QTextStream fStream(&f); //用文本流读取文件
+    fStream.setCodec("utf-8");  //解决乱码问题
+    QString content =  fStream.readAll();
+    f.close();
+
+    content = search_and_cut(content ,"Name");
+    //ui->debug->appendPlainText(content);
+}
+//ui->tabWidget->setCurrentIndex(0); 设置当前tab第0页
 
 //国服除了csgolauncher.exe名称不一样 CSGO应该是安装在steam位置之下 其他没有不同
 //注册表似乎找不到对应表项
@@ -231,115 +353,42 @@ void MainWindow::solveVacIssue()
                     }
                 }
 */
-// 转换DEMO分享代码 获得真实下载链接
+
+// 转换DEMO分享代码 获得真实下载链接  注意这里不可对dragArea赋非空值否则会死循环
 void MainWindow::sharecodeTransform()
 {   //字典去掉了大写I 小写G 小写L 数字1和0
-/*    const QString DICTIONARY = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefhijkmnopqrstuvwxyz23456789";
+    const QString DICTIONARY = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefhijkmnopqrstuvwxyz23456789";
     const QString ShareCodePattern = "^CSGO(-?[\\w]{5}){5}$";
     QRegExp reg( ShareCodePattern );     //正则表达式
 
-    //0. 读入分享代码（参照之前的项目）
+    //1. 读入分享代码（参照之前的项目）
     QString ShareCode = ui->dragArea->toPlainText();
-    ShareCode = "steam://rungame/730/76561202255233023/+csgo_download_match%20CSGO-52um8-FaZvF-Ajutm-hCoKH-2JedJ";
     if( !QString(ShareCode).isEmpty() )
         ui->dragArea->setText("");
-    //1. 去掉分享代码的无用信息（得到标准格式） "CSGO-xxx"的长度为34
+
+    //2. 去掉分享代码的无用信息（得到标准格式） "CSGO-xxx"的长度为34
     ShareCode = ShareCode.remove(0, ShareCode.lastIndexOf("CSGO-") ).left(34);
-    //2. 正则表达式匹配
+
+    //3. 正则表达式匹配
     if( !reg.exactMatch( ShareCode )){
         ui->debug->setPlainText("分享链接格式不正确！");
         return;     //TODO: 链接格式不正确的处理
     }
-    //3. 标准格式转换成获取3个id需要的字符串格式（20个字符）
+
+    //4. 标准格式转换成获取3个id需要的字符串格式（20个字符）
     ShareCode.replace("CSGO-","");
     ShareCode.replace("-", "");
 
-    //ui->debug->setPlainText( ShareCode );
-
-    //4. 20个字符需要查字典（见↑DICTIONARY）得到一个<58的位置
-    //      用到base57的加密算法 得到一个144bit的大整数，
-
-    //big = big * 字典长度 + 当前字符索引位置
-    //得到144bits大整数 分割成三个id
-    BigUnsigned big = 0;
-    for(int i = ShareCode.length() - 1 ; i >= 0; i--){
-        big.multiply(big, DICTIONARY.length());
-        big += DICTIONARY.indexOf( ShareCode.at(i) );
-    }
-
-    QByteArray all = QString::fromStdString( bigIntegerToString( big ) ).toLatin1();
-    if( all.length() == sizeof(qint64) + sizeof(qint64) + sizeof(qint16) ){
-        all.append( "\0" );
-    }
-    //Reverse
-    QByteArray t("");
-    for(int i = 0  ;i < all.length()/2 ;i++){
-        t[0] = all[ i ];
-        all[ i ] = all[ all.length() - i - 1 ];
-        all[ all.length() - i - 1 ] = t[0];
-    }
-
-    QString qstr = QString::fromStdString( bigIntegerToString( big ) );
-
-    qstr = QString::fromStdString( all.toStdString() );
-
-    ui->debug->appendPlainText( qstr );
-*/
-    //QByteArray all = QArray(big);
-
-
-    //    20*8 = 160 bits  = 64bits MatchId + 64bits OutcomeId + 32bits TokenId
-    //                                       8Byte                  8Byte                           4Byte
-
-
-    //4.1 字符转换 查字典
-    /*int* bytes = new int[20];
-    for(int i = 0; i < 2; i++){
-        bytes[i] = DICTIONARY.indexOf( ShareCode.at(1) );
-    }
-    //4.2 调用自己编写的ACC函数计算三个ID 和数值转换&累加器的工作原理类似
-    quint64 MatchId_int = ACC(bytes, 0, 4);
-    quint64 OutcomeId_int = ACC(bytes, 4, 8);
-    quint64 TokenId_int = ACC(bytes, 12, 8);
-
-    QString MatchId = tr("%1").arg(MatchId_int);
-    QString OutcomeId = tr("%1").arg(OutcomeId_int);
-    QString TokenId = tr("%1").arg(TokenId_int);
-
-    ui->debug->appendPlainText( "TokenId: " + MatchId);
-    ui->debug->appendPlainText( "OutcomeId: " + OutcomeId);
-    ui->debug->appendPlainText( "TokenId: " + TokenId );
-    */
-    //调用boiler.exe 给cmd函数传参
-    //boiler.exe path_to_output_file [matchid outcomeid tokenid]
-    //boiler.exe match.dat 3392010210108244359 3392017082055917700 18964
-    // 10111100010010110101110101000010000000000000000000000110000111
-    // 10111100010010110111011001000010000000000000000000000010000100
-    // 100101000010100
-
-    // 100001110000000100000000100000000101000011010111000100100010111110000100000000000000000010000000100100001101110100010010001011110001010001001010
-    // 11760499549408184579621369443876940960175178
-    // Reverse之后
-    // 87157106904967834496312697548180494599406711
-    // 11111010001000001110110111100011010111000110010110110010101001111100100101110101101110000000100010001000101010011011110111101010010100010001110111
-    //在match.dat中读取某行的参数***
-
-
-
+    //5. 调用@Yellowfisher编译的DLL库（核心代码源于github.com/akiver/CSGO-Demos-Manager）
+    //    获得URL（需要DLL+boiler.exe+steam_api.dll+steam_appid.txt）
+    /*
+     *      调用DLL中的getURL方法获得std::String 然后转换成QString
+     *      QString URL = QString::fromStdString( xxx );
+     *
+     */
+    ui->debug->setPlainText( ShareCode );
 }
 
-//字节累加器 计算Byte序列的数值，bytes为整型数组 Index是数组中的低地址 length是计算的长度(Byte)
-/*
- * quint64 MainWindow::ACC(int *bytes, int Index, int length){
-    quint64 sum = 0;
-    quint64 r = 1;  //8位->256
-    for(int i = 1; i <= length; i++){
-        sum += bytes[ Index + length - i] *r;
-        r *= (2^8);
-        //ui->debug->appendPlainText( tr("sum = %1").arg(sum);
-    }
-    return sum;
-}*/
 //判断一个字符串是否为纯数字
 bool MainWindow::isDigitStr(QString src)
 {
@@ -348,16 +397,13 @@ bool MainWindow::isDigitStr(QString src)
 
     while(*s && *s>='0' && *s<='9') s++;
 
-    if (*s)
-    { //不是纯数字
+    if (*s)     //不是纯数字
         return false;
-    }
-    else
-    { //纯数字
+    else       //纯数字
         return true;
-    }
 }
 
+//拖拽区域文字发生改变时调用 注意这里不可对dragArea赋非空值否则会死循环
 void MainWindow::on_dragArea_textChanged()
 {
     //sharecodeTransform();
