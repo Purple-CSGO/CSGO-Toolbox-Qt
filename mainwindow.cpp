@@ -1,6 +1,6 @@
 ﻿#include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "string.h"
+//引入库文件，位置必须是绝对地址，有改变务必改动
 #pragma comment(lib, "E:/QtProject/CSGO Toolbox/CSGO-Toolbox/libShareCodeToURLcs.lib" )
 __declspec(dllimport) int api_Urlstring(const char* a);
 
@@ -17,7 +17,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     readSetting();
     getPaths();
-    sharecodeTransform();
     //solveVacIssue(steamPath);
     //ui->debug->appendPlainText( cmd("cmd.exe /c cd D:/") );
 

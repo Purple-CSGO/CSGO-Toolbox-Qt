@@ -33,6 +33,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 DISTFILES +=
 
 RESOURCES += \
+    lib.qrc \
     src.qrc
 
 QMAKE_CXXFLAGS+=/execution-charset:utf-8
