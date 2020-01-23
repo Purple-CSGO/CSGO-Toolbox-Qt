@@ -3,7 +3,6 @@
         <file>dll/boiler.exe</file>
         <file>dll/libShareCodeToURL.dll</file>
         <file>dll/libShareCodeToURLcs.dll</file>
-        <file>dll/libShareCodeToURLcs.lib</file>
         <file>dll/steam_api.dll</file>
         <file>dll/steam_appid.txt</file>
     </qresource>
