@@ -1,5 +1,8 @@
 ﻿#include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "string.h"
+#pragma comment(lib, "E:/QtProject/CSGO Toolbox/CSGO-Toolbox/libShareCodeToURLcs.lib" )
+__declspec(dllimport) int api_Urlstring(const char* a);
 
 QString steamPath = "";
 QString launcherPath = "";
@@ -14,7 +17,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     readSetting();
     getPaths();
-    //sharecodeTransform();
+    sharecodeTransform();
     //solveVacIssue(steamPath);
     //ui->debug->appendPlainText( cmd("cmd.exe /c cd D:/") );
 
@@ -41,6 +44,7 @@ void MainWindow::readSetting()
 {
     //QSettings在.ini文件不存在时自动生成
     QSettings *iniRead = new QSettings("./config.ini", QSettings::IniFormat);
+    iniRead->setIniCodec("utf-8");     //解决乱码问题
     iniRead->beginGroup("Paths");
     steamPath = iniRead->value("steamPath").toString();
     launcherPath = iniRead->value("launcherPath").toString();
@@ -320,7 +324,7 @@ void MainWindow::getSteamID()
     //ui->debug->appendPlainText(content);
 }
 //ui->tabWidget->setCurrentIndex(0); 设置当前tab第0页
-
+/*
 //国服除了csgolauncher.exe名称不一样 CSGO应该是安装在steam位置之下 其他没有不同
 //注册表似乎找不到对应表项
 
@@ -328,6 +332,7 @@ void MainWindow::getSteamID()
 //                        "}..."" -> 继续读17位id 同上 ...
 //利用String相关操作依次查找匹配的第一个串位置&删掉该串之前的内容
 //读取C:\Program Files (x86)\Steam\config\loginusers.vdf
+*/
 /*"users"
 {
     "76561198315078806"
@@ -365,7 +370,8 @@ void MainWindow::sharecodeTransform()
     QString ShareCode = ui->dragArea->toPlainText();
     if( !QString(ShareCode).isEmpty() )
         ui->dragArea->setText("");
-
+    //ShareCode = "steam://rungame/730/76561202255233023/+csgo_download_match%20CSGO-52um8-FaZvF-Ajutm-hCoKH-2JedJ";
+    ShareCode = "steam://rungame/730/76561202255233023/+csgo_download_match%20CSGO-UoNbQ-zr5JZ-uW25m-qPBz8-PzBND";
     //2. 去掉分享代码的无用信息（得到标准格式） "CSGO-xxx"的长度为34
     ShareCode = ShareCode.remove(0, ShareCode.lastIndexOf("CSGO-") ).left(34);
 
@@ -386,7 +392,14 @@ void MainWindow::sharecodeTransform()
      *      QString URL = QString::fromStdString( xxx );
      *
      */
-    ui->debug->setPlainText( ShareCode );
+    //调用DLL库中函数 因为限制只能传进去char数组 故此处转换
+    QByteArray ba=ShareCode.toLatin1();
+    char *c = ba.data();
+    ui->debug->setPlainText(QString::number( api_Urlstring( c ) ) );
+
+
+
+    //ui->debug->setPlainText( URL );
 }
 
 //判断一个字符串是否为纯数字
