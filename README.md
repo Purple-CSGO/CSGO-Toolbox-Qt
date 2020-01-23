@@ -1,11 +1,11 @@
 # CSGO工具箱 项目说明
-> 2020.01.23 16pm last edited by Purp1e
+> 2020.01.23 23pm last edited by Purp1e
 
 ## 一、CSGO工具箱介绍
 
 CSGO工具箱是旨在方便CSGO玩家调整、修改、保存、备份和转移设置等的工具性质的GUI程序，减少玩家在调整设置等事项上花费的时间，从而节省出更多的时间投入游戏本身。
 
-> CSGO Toolbox is dedicated to enablling CSGO players to modify their configs, game settings etc much more swiftly, thus more time is saved to put on game itself.
+> CSGO Toolbox is dedicated to enabling CSGO players to modify their configs, game settings etc much more swiftly, thus more time is saved to put on game itself.
 
 ## 二、项目开发须知
 
@@ -28,5 +28,3 @@ CSGO工具箱是旨在方便CSGO玩家调整、修改、保存、备份和转移
 3. 当开发者正在实现某功能时，标签改为`正在实现`。
 4. 功能已经调试完成之后，标签改为`已实现`。
 5. 功能完整加入程序中并确认无误之后，标签改为`已部署`，并关闭issue。
-
--- --

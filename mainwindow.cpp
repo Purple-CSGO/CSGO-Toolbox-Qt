@@ -8,6 +8,8 @@ QString steamPath = "";
 QString launcherPath = "";
 QString csgoPath = "";
 QString steamID = "";
+bool autoClip = false;
+bool autoDownload = false;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -15,6 +17,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    ui->labelDragArea->setAttribute(Qt::WA_TransparentForMouseEvents,true);
     readSetting();
     getPaths();
     //solveVacIssue(steamPath);
@@ -50,6 +53,10 @@ void MainWindow::readSetting()
     csgoPath = iniRead->value("csgoPath").toString();
     iniRead->endGroup();
 
+    iniRead->beginGroup("auto");
+    autoClip = iniRead->value("autoClip").toBool();
+    autoDownload = iniRead->value("autoDownload").toBool();
+    iniRead->endGroup();
     //读入完成后删除指针
     delete iniRead;
 
@@ -60,6 +67,16 @@ void MainWindow::readSetting()
         launcherPath = "";
     if( !QFile::exists( csgoPath ) || !csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive ) )
         csgoPath = "";
+
+    //设置ui中的checkbox状态
+    if(autoClip == true)
+        ui->autoClip->setCheckState(Qt::Checked);
+    else
+        ui->autoClip->setCheckState(Qt::Unchecked);
+    if(autoDownload == true)
+        ui->autoDownload->setCheckState(Qt::Checked);
+    else
+        ui->autoDownload->setCheckState(Qt::Unchecked);
 }
 
 //写入设置
@@ -90,6 +107,11 @@ void MainWindow::writeSetting()
     IniWrite->setValue("steamPath", steamPath);
     IniWrite->setValue("launcherPath", launcherPath);
     IniWrite->setValue("csgoPath", csgoPath);
+    IniWrite->endGroup();
+
+    IniWrite->beginGroup("auto");
+    IniWrite->setValue("autoClip", autoClip);
+    IniWrite->setValue("autoDownload", autoDownload);
     IniWrite->endGroup();
     //写入完成后删除指针
     delete IniWrite;
@@ -365,18 +387,21 @@ void MainWindow::sharecodeTransform()
     const QString ShareCodePattern = "^CSGO(-?[\\w]{5}){5}$";
     QRegExp reg( ShareCodePattern );     //正则表达式
 
+    //显示提示
+    ui->dispURL->setText("正在转换链接。。。");
     //1. 读入分享代码（参照之前的项目）
     QString ShareCode = ui->dragArea->toPlainText();
     if( !QString(ShareCode).isEmpty() )
         ui->dragArea->setText("");
-    //ShareCode = "steam://rungame/730/76561202255233023/+csgo_download_match%20CSGO-52um8-FaZvF-Ajutm-hCoKH-2JedJ";
-    ShareCode = "steam://rungame/730/76561202255233023/+csgo_download_match%20CSGO-UoNbQ-zr5JZ-uW25m-qPBz8-PzBND";
-    //2. 去掉分享代码的无用信息（得到标准格式） "CSGO-xxx"的长度为34
+    else
+        return;
+
+   //2. 去掉分享代码的无用信息（得到标准格式） "CSGO-xxx"的长度为34
     ShareCode = ShareCode.remove(0, ShareCode.lastIndexOf("CSGO-") ).left(34);
 
     //3. 正则表达式匹配
     if( !reg.exactMatch( ShareCode )){
-        ui->debug->setPlainText("分享链接格式不正确！");
+        ui->dispURL->setText("分享链接格式不正确！");
         return;     //TODO: 链接格式不正确的处理
     }
 
@@ -386,20 +411,50 @@ void MainWindow::sharecodeTransform()
 
     //5. 调用@Yellowfisher编译的DLL库（核心代码源于github.com/akiver/CSGO-Demos-Manager）
     //    获得URL（需要DLL+boiler.exe+steam_api.dll+steam_appid.txt）
-    /*
-     *      调用DLL中的getURL方法获得std::String 然后转换成QString
-     *      QString URL = QString::fromStdString( xxx );
-     *
-     */
+    //6. 打开Steam 关闭CSGO
+    cmd("explorer.exe \"steam://rungame\"");
+    cmd("taskkill /f /t /im csgo.exe");
+    do{
+        stall(100);
+    }while( getProcessPath("csgo.exe").endsWith("exe") );
+
     //调用DLL库中函数 因为限制只能传进去char数组 故此处转换
     QByteArray ba=ShareCode.toLatin1();
     char *c = ba.data();
-    ui->debug->setPlainText(QString::number( api_Urlstring( c ) ) );
+    QString retValue = QString::number( api_Urlstring( c ) );
+    if( retValue != "0" ){
+        ui->dispURL->setText( " 转换失败！错误代码：" + retValue );
+        return;
+    }
 
+    QFile f("URL.txt");
+    if ( !f.exists() ) //文件不存在
+        return;
+    if ( !f.open(QIODevice::ReadOnly | QIODevice::Text) )
+        return;
+    QTextStream fStream(&f); //用文本流读取文件
+    fStream.setCodec("utf-8");  //解决乱码问题
+    QString URL =  fStream.readAll();
+    URL.replace("\n", "");
+    URL.replace("\r", "");
+    f.close();
 
+    if ( QFile::exists("matches.dat") )
+        QFile::remove("matches.dat");
+    if ( QFile::exists("URL.txt") )
+        QFile::remove("URL.txt");
 
-    //ui->debug->setPlainText( URL );
+    if( URL.startsWith("http://") )
+        ui->dispURL->setText(URL);
+    if( autoDownload == true )
+        on_downURL_clicked();
+    if( autoClip == true )
+        on_clipURL_clicked();
 }
+//两个示例分享链接
+//steam://rungame/730/76561202255233023/+csgo_download_match%20CSGO-52um8-FaZvF-Ajutm-hCoKH-2JedJ"
+//steam://rungame/730/76561202255233023/+csgo_download_match%20CSGO-UoNbQ-zr5JZ-uW25m-qPBz8-PzBND"
+//http://replay142.valve.net/730/003392017082055917700_0716589588.dem.bz2
 
 //判断一个字符串是否为纯数字
 bool MainWindow::isDigitStr(QString src)
@@ -418,7 +473,7 @@ bool MainWindow::isDigitStr(QString src)
 //拖拽区域文字发生改变时调用 注意这里不可对dragArea赋非空值否则会死循环
 void MainWindow::on_dragArea_textChanged()
 {
-    //sharecodeTransform();
+    sharecodeTransform();
 }
 
 
@@ -465,3 +520,42 @@ void WriteLine()
 }
 
 */
+
+void MainWindow::on_downURL_clicked()
+{
+    QString URL = ui->dispURL->toPlainText();
+    if( URL.startsWith("http://") ){
+        QUrl url( URL );
+        QDesktopServices::openUrl(url);
+    }
+    else
+        return;
+}
+
+void MainWindow::on_clipURL_clicked()
+{
+    //QString originalText = clipboard->text();         //获取剪贴板上文本信息
+    QString URL = ui->dispURL->toPlainText();
+    if( URL.startsWith("http://") ){
+        QClipboard *clipboard = QApplication::clipboard();   //获取系统剪贴板指针
+        clipboard->setText(URL);                     //设置剪贴板内容</span>
+    }
+    else
+        return;
+}
+
+void MainWindow::on_autoDownload_stateChanged(int arg1)
+{
+    if(arg1 == Qt::Checked )
+        autoDownload = true;
+    else
+        autoDownload = false;
+}
+
+void MainWindow::on_autoClip_stateChanged(int arg1)
+{
+    if(arg1 == Qt::Checked )
+        autoClip = true;
+    else
+        autoClip = false;
+}

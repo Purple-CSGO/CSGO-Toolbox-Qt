@@ -14,7 +14,9 @@
 #include <QDateTime>
 #include <QTextEdit>
 #include <QTextStream>
-
+#include <QDesktopServices>
+#include <QUrl>
+#include <QClipboard>
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -31,6 +33,14 @@ public:
 private slots:
 
     void on_dragArea_textChanged();
+
+    void on_downURL_clicked();
+
+    void on_clipURL_clicked();
+
+    void on_autoDownload_stateChanged(int arg1);
+
+    void on_autoClip_stateChanged(int arg1);
 
 private:
     Ui::MainWindow *ui;
