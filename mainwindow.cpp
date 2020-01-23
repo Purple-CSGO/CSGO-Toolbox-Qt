@@ -1,8 +1,5 @@
 ﻿#include "mainwindow.h"
 #include "ui_mainwindow.h"
-//引入库文件，位置必须是绝对地址，有改变务必改动
-#pragma comment(lib, "E:/QtProject/CSGO Toolbox/CSGO-Toolbox/libShareCodeToURLcs.lib" )
-__declspec(dllimport) int api_Urlstring(const char* a);
 
 QString steamPath = "";
 QString launcherPath = "";
@@ -14,6 +11,14 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    connect(this, SIGNAL(clicked(bool)), this, SLOT(openThreadBtnSlot()));
+    connect(this, SIGNAL(clicked(bool)), this, SLOT(closeThreadBtnSlot()));
+
+    /*线程初始化*/
+    //thread1 = new MyThread;
+    //connect(thread1,SIGNAL(finished()),this,SLOT(finishedThreadBtnSlot()));
+
 
     readSetting();
     getPaths();
@@ -392,9 +397,10 @@ void MainWindow::sharecodeTransform()
      *
      */
     //调用DLL库中函数 因为限制只能传进去char数组 故此处转换
-    QByteArray ba=ShareCode.toLatin1();
-    char *c = ba.data();
-    ui->debug->setPlainText(QString::number( api_Urlstring( c ) ) );
+    //引入多线程，见"PThread.cpp"
+    getURLThread *Thread = new getURLThread();
+    Thread->start();
+    emit getURL(ShareCode);
 
 
 

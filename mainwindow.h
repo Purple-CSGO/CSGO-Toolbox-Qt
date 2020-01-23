@@ -14,6 +14,8 @@
 #include <QDateTime>
 #include <QTextEdit>
 #include <QTextStream>
+//多线程
+#include "getURLThread.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -27,10 +29,13 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     void stall(int time);
+    void getURL(QString ShareCode);
 
 private slots:
-
     void on_dragArea_textChanged();
+    void openThread();
+    void closeThread();
+    void finishedThread();
 
 private:
     Ui::MainWindow *ui;
