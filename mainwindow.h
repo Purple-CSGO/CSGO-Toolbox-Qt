@@ -54,6 +54,10 @@ private slots:
 
     void on_transferSetting_clicked();
 
+    void on_openCNlocalcfg_clicked();
+
+    void on_ManualSteamID_clicked();
+
 private:
     Ui::MainWindow *ui;
 
@@ -61,6 +65,7 @@ private:
     void writeSetting();
     void closeEvent(QCloseEvent *e);
     bool getSteamPath();
+    bool getLauncherPath();
     bool getCsgoPath();
     void solveVacIssue(QString Path);
     QString getProcessPath(QString processName);

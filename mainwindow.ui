@@ -115,7 +115,7 @@
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>150</y>
+           <y>200</y>
            <width>381</width>
            <height>181</height>
           </rect>
@@ -131,9 +131,9 @@
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>340</y>
+           <y>390</y>
            <width>381</width>
-           <height>111</height>
+           <height>61</height>
           </rect>
          </property>
         </widget>
@@ -154,7 +154,7 @@
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>60</y>
+           <y>160</y>
            <width>121</width>
            <height>31</height>
           </rect>
@@ -180,7 +180,7 @@
          <property name="geometry">
           <rect>
            <x>140</x>
-           <y>60</y>
+           <y>160</y>
            <width>121</width>
            <height>31</height>
           </rect>
@@ -199,14 +199,14 @@
           </rect>
          </property>
          <property name="text">
-          <string>手动选择Steam路径</string>
+          <string>手动选择路径</string>
          </property>
         </widget>
         <widget class="QPushButton" name="transferSetting">
          <property name="geometry">
           <rect>
            <x>270</x>
-           <y>60</y>
+           <y>160</y>
            <width>121</width>
            <height>31</height>
           </rect>
@@ -254,6 +254,59 @@
           <string>解决VAC验证问题</string>
          </property>
         </widget>
+        <widget class="QPushButton" name="openCNlocalcfg">
+         <property name="geometry">
+          <rect>
+           <x>140</x>
+           <y>60</y>
+           <width>121</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>打开国服local/cfg</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="ManualSteamID">
+         <property name="geometry">
+          <rect>
+           <x>270</x>
+           <y>60</y>
+           <width>121</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>手动输入SteamID</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="antiHarmony_4">
+         <property name="geometry">
+          <rect>
+           <x>140</x>
+           <y>110</y>
+           <width>121</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>国服反和谐恢复</string>
+         </property>
+        </widget>
+        <zorder>debug</zorder>
+        <zorder>userdata</zorder>
+        <zorder>opencsgocfg</zorder>
+        <zorder>backupSetting</zorder>
+        <zorder>openlocalcfg</zorder>
+        <zorder>restoreSetting</zorder>
+        <zorder>manual</zorder>
+        <zorder>transferSetting</zorder>
+        <zorder>antiHarmony</zorder>
+        <zorder>solveVAC</zorder>
+        <zorder>openCNlocalcfg</zorder>
+        <zorder>ManualSteamID</zorder>
+        <zorder>antiHarmony_4</zorder>
+        <zorder>reloadHarmony</zorder>
        </widget>
        <widget class="QWidget" name="TabDemo">
         <property name="maximumSize">
