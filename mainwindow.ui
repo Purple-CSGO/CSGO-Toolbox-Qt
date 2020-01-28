@@ -84,14 +84,14 @@
         <enum>QTabWidget::Rounded</enum>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <property name="tabBarAutoHide">
         <bool>false</bool>
        </property>
        <widget class="QWidget" name="TabMain">
         <property name="enabled">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
         <property name="minimumSize">
          <size>
@@ -109,10 +109,13 @@
          <string>主要</string>
         </attribute>
         <widget class="QPlainTextEdit" name="debug">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>10</y>
+           <y>150</y>
            <width>381</width>
            <height>181</height>
           </rect>
@@ -122,13 +125,133 @@
          </property>
         </widget>
         <widget class="QTableView" name="userdata">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>200</y>
+           <y>340</y>
            <width>381</width>
            <height>111</height>
           </rect>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="opencsgocfg">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>10</y>
+           <width>121</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>打开csgo/cfg位置</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="backupSetting">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>60</y>
+           <width>121</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>备份设置</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="openlocalcfg">
+         <property name="geometry">
+          <rect>
+           <x>140</x>
+           <y>10</y>
+           <width>121</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>打开local/cfg位置</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="restoreSetting">
+         <property name="geometry">
+          <rect>
+           <x>140</x>
+           <y>60</y>
+           <width>121</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>恢复设置</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="manual">
+         <property name="geometry">
+          <rect>
+           <x>270</x>
+           <y>10</y>
+           <width>121</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>手动选择Steam路径</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="transferSetting">
+         <property name="geometry">
+          <rect>
+           <x>270</x>
+           <y>60</y>
+           <width>121</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>转移设置</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="antiHarmony">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>110</y>
+           <width>121</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>国服反和谐</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="reloadHarmony">
+         <property name="geometry">
+          <rect>
+           <x>140</x>
+           <y>110</y>
+           <width>121</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>反和谐恢复</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="solveVAC">
+         <property name="geometry">
+          <rect>
+           <x>270</x>
+           <y>110</y>
+           <width>121</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>解决VAC验证问题</string>
          </property>
         </widget>
        </widget>

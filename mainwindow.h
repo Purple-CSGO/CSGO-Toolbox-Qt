@@ -42,13 +42,26 @@ private slots:
 
     void on_autoClip_stateChanged(int arg1);
 
+    void on_opencsgocfg_clicked();
+
+    void on_openlocalcfg_clicked();
+
+    void on_manual_clicked();
+
+    void on_backupSetting_clicked();
+
+    void on_restoreSetting_clicked();
+
+    void on_transferSetting_clicked();
+
 private:
     Ui::MainWindow *ui;
 
     void readSetting();
     void writeSetting();
     void closeEvent(QCloseEvent *e);
-    void getPaths();
+    bool getSteamPath();
+    bool getCsgoPath();
     void solveVacIssue(QString Path);
     QString getProcessPath(QString processName);
     QString cmd(QString command);
