@@ -18,6 +18,7 @@
 #include <QUrl>
 #include <QClipboard>
 #include <QStandardItemModel>
+#include "lib/JlCompress.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }

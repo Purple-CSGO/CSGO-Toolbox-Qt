@@ -41,7 +41,7 @@ QMAKE_CXXFLAGS+=/execution-charset:utf-8
 
 RC_CODEPAGE = 65001
 
-VERSION = 1.0
+VERSION = 1.0.2
 
 DEFINES += APP_VERSION=\\\"$$VERSION\\\"
 
@@ -50,3 +50,13 @@ QMAKE_PROJECT_NAME = "CSGO工具箱"
 #QMAKE_LFLAGS += /MANIFESTUAC:"level='requireAdministrator'uiAccess='false'"
 
 RC_ICONS = logo.ico
+
+SUBDIRS += \
+    lib/quazip.pro \
+    lib/quazip.pro
+
+win32: LIBS += -L$$PWD/lib/ -lquazipd
+
+INCLUDEPATH += $$[QT_INSTALL_HEADERS]/QtZlib
+
+DEPENDPATH += $$PWD/.

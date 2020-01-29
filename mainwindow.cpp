@@ -12,15 +12,13 @@ QString userName = "";
 bool autoClip = false;
 bool autoDownload = false;
 
-#define STEAM_KEY "HKEY_CURRENT_USER\\SOFTWARE\\Valve\\Steam" //注册表SteamExe项所在位置
-#define Launcher_KEY "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Valve\\Steam\\NSIS" //注册表CSGO项所在位置 TODO:
 //TODO: 加载过程的文字显示在Loading界面上
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
+    
     ui->labelDragArea->setAttribute(Qt::WA_TransparentForMouseEvents,true);
     readSetting();
     getSteamPath();
@@ -54,25 +52,25 @@ void MainWindow::readSetting()
 {
     QSettings *iniRead = new QSettings("./config.ini", QSettings::IniFormat);
     iniRead->setIniCodec("utf-8");     //解决乱码问题
-
+    
     iniRead->beginGroup("Paths");
     steamPath = iniRead->value("steamPath").toString();
     launcherPath = iniRead->value("launcherPath").toString();
     csgoPath = iniRead->value("csgoPath").toString();
     iniRead->endGroup();
-
+    
     iniRead->beginGroup("user");
     userName = iniRead->value("userName").toString();
     steamID = iniRead->value("steamID").toString();
     iniRead->endGroup();
-
+    
     iniRead->beginGroup("auto");
     autoClip = iniRead->value("autoClip").toBool();
     autoDownload = iniRead->value("autoDownload").toBool();
     iniRead->endGroup();
     //读入完成后删除指针
     delete iniRead;
-
+    
     //如果路径不存在则置空
     if( !QFile::exists( steamPath ) || !steamPath.endsWith("steam.exe", Qt::CaseInsensitive ) )
         steamPath = "";
@@ -80,7 +78,7 @@ void MainWindow::readSetting()
         launcherPath = "";
     if( !QFile::exists( csgoPath ) || !csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive ) )
         csgoPath = "";
-
+    
     //设置ui中的checkbox状态
     if(autoClip == true)
         ui->autoClip->setCheckState(Qt::Checked);
@@ -102,27 +100,27 @@ void MainWindow::writeSetting()
         launcherPath = "";
     if( !QFile::exists( csgoPath ) || !csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive ) )
         csgoPath = "";
-
+    
     //写设置
     QSettings *IniWrite = new QSettings("./config.ini", QSettings::IniFormat);
     IniWrite->setIniCodec("utf-8");     //解决乱码问题
-
+    
     IniWrite->beginGroup("AppInfo");
     IniWrite->setValue("Name", qAppName());
     IniWrite->setValue("Version", APP_VERSION);
     IniWrite->endGroup();
-
+    
     IniWrite->beginGroup("Paths");
     IniWrite->setValue("steamPath", steamPath);
     IniWrite->setValue("launcherPath", launcherPath);
     IniWrite->setValue("csgoPath", csgoPath);
     IniWrite->endGroup();
-
+    
     IniWrite->beginGroup("user");
     IniWrite->setValue("userName", userName);
     IniWrite->setValue("steamID", steamID);
     IniWrite->endGroup();
-
+    
     IniWrite->beginGroup("auto");
     IniWrite->setValue("autoClip", autoClip);
     IniWrite->setValue("autoDownload", autoDownload);
@@ -134,9 +132,10 @@ void MainWindow::writeSetting()
 //获取Steam路径
 bool MainWindow::getSteamPath()
 {
+#define STEAM_KEY "HKEY_CURRENT_USER\\SOFTWARE\\Valve\\Steam" //注册表SteamExe项所在位置
     //第一步 读取设置中的steamPath 已经在main()中调用 readSetting()
     QString tPath = steamPath;
-
+    
     //第二步 尝试默认路径
     if( !QFile(tPath).exists() || !tPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
         QStringList defSteamPath;
@@ -148,7 +147,7 @@ bool MainWindow::getSteamPath()
                     <<  QStringLiteral("G:/Steam/Steam.exe")
                      <<  QStringLiteral("H:/Steam/Steam.exe")
                          ;
-
+        
         for(int i = 0; i< defSteamPath.size(); i++)
         {
             if( QFile::exists( defSteamPath.at(i) ) ){
@@ -157,7 +156,7 @@ bool MainWindow::getSteamPath()
             }
         }
     }
-
+    
     //第三步 读取注册表中路径  //HKEY_CURRENT_USER\SOFTWARE\Valve\Steam 查询SteamExe
     if( !QFile(tPath).exists() || !tPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
         QSettings *pReg = new QSettings(STEAM_KEY, QSettings::NativeFormat);
@@ -165,19 +164,19 @@ bool MainWindow::getSteamPath()
         //pReg->setValue("key", "value");   //设置注册表值
         delete pReg;
     }
-
+    
     //第四步 读取进程列表 要打开steam
     if( !QFile(tPath).exists() || !tPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
         QUrl url( "steam://rungame" );
         QDesktopServices::openUrl(url);
-
+        
         tPath = getProcessPath("steam.exe");
         for(int count = 10; count >0 && !QFile::exists( tPath ) ; count-- ){
             stall(100);
             tPath = getProcessPath("steam.exe");
         }
     }
-
+    
     //第五步 自动获取路径失败 提示用户手动选择路径
     if( QFile(tPath).exists() && tPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
         steamPath = tPath;
@@ -192,9 +191,10 @@ bool MainWindow::getSteamPath()
 //获取国服启动器csgoLauncher路径
 bool MainWindow::getLauncherPath()
 {
+#define Launcher_KEY "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Valve\\Steam\\NSIS" //注册表CSGO项所在位置 TODO:
     //第一步 读取设置中的launcherPath 已经在main()中调用 readSetting()
     QString tPath = launcherPath;
-
+    
     //第二步 读取注册表中路径
     if( !QFile(tPath).exists() || !tPath.endsWith("csgolauncher.exe", Qt::CaseInsensitive) ){
         QSettings *pReg = new QSettings(Launcher_KEY, QSettings::NativeFormat);
@@ -203,19 +203,19 @@ bool MainWindow::getLauncherPath()
         if( !tPath.isEmpty() )
             tPath = tPath.append("\\csgolauncher.exe");
     }
-
+    
     //第三步 读取进程列表 要打开国服启动器
     if( !QFile(tPath).exists() || !tPath.endsWith("csgolauncher.exe", Qt::CaseInsensitive) ){
         QUrl url( "steam://rungame" );
         QDesktopServices::openUrl(url);
-
+        
         tPath = getProcessPath("csgolauncher.exe");
         for(int count = 10; count >0 && !QFile::exists( tPath ) ; count-- ){
             stall(100);
             tPath = getProcessPath("csgolauncher.exe");
         }
     }
-
+    
     //第四步 自动获取路径失败 提示用户手动选择路径
     if( QFile(tPath).exists() && tPath.endsWith("csgolauncher.exe", Qt::CaseInsensitive) ){
         launcherPath = tPath;
@@ -232,7 +232,7 @@ bool MainWindow::getCsgoPath()
 {
     //第一步 读取设置中的csgoPath 已经在main()中调用 readSetting()
     QString tPath = csgoPath;
-
+    
     //第二步 尝试默认路径
     if( !QFile(tPath).exists() || !tPath.endsWith("csgo.exe", Qt::CaseInsensitive) ){
         QStringList defCsgoPath;
@@ -245,7 +245,7 @@ bool MainWindow::getCsgoPath()
                      <<  QStringLiteral("G:/SteamLibrary/steamapps/common/Counter-Strike Global Offensive/csgo.exe")
                       <<  QStringLiteral("H:/SteamLibrary/steamapps/common/Counter-Strike Global Offensive/csgo.exe")
                           ;
-
+        
         for(int i = 0; i< defCsgoPath.size(); i++)
         {
             if( QFile::exists( defCsgoPath.at(i) ) ){
@@ -254,7 +254,7 @@ bool MainWindow::getCsgoPath()
             }
         }
     }
-
+    
     //第三步 根据Steam或国服启动器获得路径
     if( !QFile(tPath).exists() || !tPath.endsWith("csgo.exe", Qt::CaseInsensitive) ){
         if( !QFile(steamPath).exists() || !tPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
@@ -266,12 +266,12 @@ bool MainWindow::getCsgoPath()
             tPath = tPath.replace("steam.exe", "steamapps/common/Counter-Strike Global Offensive/csgo.exe", Qt::CaseInsensitive);
         }
     }
-
+    
     //第四步 读取进程列表 要打开steam和csgo 会强制关闭CSGO
     if( !QFile(tPath).exists() || !tPath.endsWith("csgo.exe", Qt::CaseInsensitive) ){
         QUrl url( "steam://rungameid/730" );
         QDesktopServices::openUrl(url);
-
+        
         tPath = getProcessPath("csgo.exe");
         for(int count = 10; count >0 && !QFile::exists( tPath ) ; count-- ){
             stall(100);
@@ -279,7 +279,7 @@ bool MainWindow::getCsgoPath()
             cmd("taskkill /f /t /im csgo.exe");
         }
     }
-
+    
     //第五步 自动获取路径失败 提示用户手动选择路径
     if( QFile(tPath).exists() && tPath.endsWith("csgo.exe", Qt::CaseInsensitive) ){
         csgoPath = tPath;
@@ -300,7 +300,7 @@ QString MainWindow::getProcessPath(QString processName)
     processName = processName.replace("\r", "");
     processName = processName.replace("\n", "");
     processName = processName.simplified();
-
+    
     return processName;
 }
 
@@ -361,7 +361,7 @@ void MainWindow::solveVacIssue(QString Path)
             start "Steam Client Service"
    7. 其他诸如设置快捷方式 打开网吧模式
             ? start /high steam -console -cafeapplaunch -forceservice
-
+            
     //1.
     cmd("taskkill /F /IM Steam.exe");
     cmd("taskkill /F /IM csgolauncher.exe");
@@ -392,8 +392,8 @@ void MainWindow::solveVacIssue(QString Path)
     ui->debug->appendPlainText( cmd("cd") );
     ui->debug->appendPlainText( cmd("cd " + steamPath) );
     ui->debug->appendPlainText( cmd("dir") );
-
-
+    
+    
 }
 
 //剪切掉相应的部分 aaakeybbb -> bbb
@@ -402,7 +402,7 @@ QString MainWindow::search_and_cut(QString &input, QString key)
     qint32 i = input.indexOf(key, Qt::CaseInsensitive);
     if( i >= 0 )
         input.remove(0, i + key.length() );
-
+    
     return "";
 }
 
@@ -422,7 +422,7 @@ QString MainWindow::getValue(QString input, QString key)
     return get_until(input, "\"");
 }
 
-//获取SteamID，一般9位数字 TODO: 把数据按照格式显示出来，供用户点击选择 TODO: 错误处理
+//获取SteamID，一般9位数字 TODO: 错误处理 &
 void MainWindow::getSteamID()
 {
     QString fileName = "";
@@ -435,7 +435,7 @@ void MainWindow::getSteamID()
         fileName.replace("csgolauncher.exe" ,"config\\loginusers.vdf", Qt::CaseInsensitive );
     }
     else return;
-
+    
     QFile f( fileName );
     if ( !f.exists() ) //文件不存在
         return;
@@ -487,16 +487,16 @@ void MainWindow::getSteamID()
         ui->userdata->setColumnWidth(1,100);
         ui->userdata->setColumnWidth(2,115);
         ui->userdata->setColumnWidth(3,83);
-
+        
         QStringList header;
         header <<  "SteamID" << "账号" << "昵称" << "按钮";
         ui->userdata->setHorizontalHeaderLabels(header);
-
+        
         for(short i = 0; i < n; i++){
             ui->userdata->setItem(i, 0, new QTableWidgetItem(SteamID.at(i)));
             ui->userdata->setItem(i, 1, new QTableWidgetItem(AccountName.at(i)));
             ui->userdata->setItem(i, 2, new QTableWidgetItem(PersonaName.at(i)));
-
+            
             QPushButton *button = new QPushButton();
             connect(button, SIGNAL(clicked()), this, SLOT(onTableBtnClicked()));
             // 在QTableWidget中添加控件
@@ -528,7 +528,7 @@ void MainWindow::sharecodeTransform()
     const QString DICTIONARY = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefhijkmnopqrstuvwxyz23456789";
     const QString ShareCodePattern = "^CSGO(-?[\\w]{5}){5}$";
     QRegExp reg( ShareCodePattern );     //正则表达式
-
+    
     //显示提示
     ui->dispURL->setText("正在转换链接。。。");
     //1. 读入分享代码（参照之前的项目）
@@ -537,20 +537,20 @@ void MainWindow::sharecodeTransform()
         ui->dragArea->setText("");
     else
         return;
-
+    
     //2. 去掉分享代码的无用信息（得到标准格式） "CSGO-xxx"的长度为34
     ShareCode = ShareCode.remove(0, ShareCode.lastIndexOf("CSGO-") ).left(34);
-
+    
     //3. 正则表达式匹配
     if( !reg.exactMatch( ShareCode )){
         ui->dispURL->setText("分享链接格式不正确！");
         return;     //TODO: 链接格式不正确的处理
     }
-
+    
     //4. 标准格式转换成获取3个id需要的字符串格式（20个字符）
     ShareCode.replace("CSGO-","");
     ShareCode.replace("-", "");
-
+    
     //5. 调用@Yellowfisher编译的DLL库（核心代码源于github.com/akiver/CSGO-Demos-Manager）
     //    获得URL（需要DLL+boiler.exe+steam_api.dll+steam_appid.txt）
     //6. 打开Steam 关闭CSGO
@@ -559,7 +559,7 @@ void MainWindow::sharecodeTransform()
     do{
         stall(100);
     }while( getProcessPath("csgo.exe").endsWith("exe") );
-
+    
     //调用DLL库中函数 因为限制只能传进去char数组 故此处转换
     QByteArray ba=ShareCode.toLatin1();
     char *c = ba.data();
@@ -568,7 +568,7 @@ void MainWindow::sharecodeTransform()
         ui->dispURL->setText( " 转换失败！错误代码：" + retValue );
         return;
     }
-
+    
     QFile f("URL.txt");
     if ( !f.exists() ) //文件不存在
         return;
@@ -580,12 +580,12 @@ void MainWindow::sharecodeTransform()
     URL.replace("\n", "");
     URL.replace("\r", "");
     f.close();
-
+    
     if ( QFile::exists("matches.dat") )
         QFile::remove("matches.dat");
     if ( QFile::exists("URL.txt") )
         QFile::remove("URL.txt");
-
+    
     if( URL.startsWith("http://") )
         ui->dispURL->setText(URL);
     if( autoDownload == true )
@@ -623,19 +623,19 @@ void MainWindow::on_dragArea_textChanged()
     // 计算机\HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Valve\Steam\NSIS  Path
     //国服 计算机\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run
     //计算机\HKEY_CURRENT_USER\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Store
-
+    
     //获得计算机名
     //QString machineName = QHostInfo::localHostName();
     //ui->debug->setPlainText( machineName );
     //ui->debug->setPlainText( QCoreApplication::applicationDirPath() );    //exe所在路径
     //ui->debug->setPlainText( QDir::currentPath() ); //项目路径 当前路径
-
+    
     if(QFile::exists(steamPath)) ;   //拖拽可能用到的代码
       if( tPath.endsWith("windeployqt.exe",Qt::CaseSensitive) ){
         steamPath.replace("file:///","");        //去除拖拽产生的前缀
-
+        
         if( !QString(tPath).isEmpty() )
-
+        
 #include <QFile>
 
 void ReadLine()
@@ -652,7 +652,7 @@ void ReadLine()
             displayString << str;
         }
         file.close();
-
+        
     }
 }
 
@@ -726,20 +726,20 @@ void MainWindow::on_opencsgocfg_clicked()
     if( !QFile::exists( csgoPath ) || !csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive ) ){
         return;
     }
-
+    
     QString tPath = csgoPath;
     tPath.replace("csgo.exe", "csgo/cfg", Qt::CaseInsensitive);
-
+    
     // 检查目录是否存在，若不存在则新建
     QDir dir;
     if (!dir.exists(tPath))
         dir.mkpath(tPath);
-
+    
     QUrl url( "file:///" + tPath );
     QDesktopServices::openUrl(url);
 }
 
-//打开local/cfg文件夹 TODO:
+//打开local/cfg文件夹
 void MainWindow::on_openlocalcfg_clicked()
 {
     if( !QFile::exists( steamPath ) || !steamPath.endsWith("steam.exe", Qt::CaseInsensitive ) ){
@@ -747,12 +747,12 @@ void MainWindow::on_openlocalcfg_clicked()
     }
     QString tPath = steamPath;
     tPath.replace("steam.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
-
+    
     // 检查目录是否存在，若不存在则新建
     QDir dir;
     if (!dir.exists(tPath))
         dir.mkpath(tPath);
-
+    
     QUrl url( "file:///" + tPath );
     QDesktopServices::openUrl(url);
 }
@@ -769,7 +769,7 @@ void MainWindow::on_openCNlocalcfg_clicked()
     QDir dir;
     if (!dir.exists(tPath))
         dir.mkpath(tPath);
-
+    
     QUrl url( "file:///" + tPath );
     QDesktopServices::openUrl(url);
 }
@@ -807,20 +807,41 @@ void MainWindow::on_manualBtn_clicked()
 
 //备份设置 TODO:
 void MainWindow::on_backupSetting_clicked()
-{
+{// C:\Program Files (x86)\Steam\userdata\354813078\730\local\cfg
+    if( steamID.isEmpty() )
+        return;
+    QString tPath = "";
+    if( QFile(steamPath).exists() && steamPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
+        tPath = steamPath;
+        tPath.replace("steam.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
+    }
+    else if ( QFile(launcherPath).exists() && launcherPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
+        tPath = launcherPath;
+        tPath.replace("csgolauncher.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
+    }
+    else return;
 
+    QDateTime current_date_time = QDateTime::currentDateTime();
+    QString zipName = current_date_time.toString("yyyy_MM_dd hh_mm_ss ddd") + ".zip";
+    QString zipPath = QCoreApplication::applicationDirPath() + "/备份/";
+    QDir dir;
+    //如果路径不存在则创建
+    if (!dir.exists(zipPath))   dir.mkpath(zipPath);
+
+    JlCompress::compressDir(zipPath + zipName, tPath); //压缩
+    //TODO: 压缩后的提示
 }
 
 //恢复设置 TODO:
 void MainWindow::on_restoreSetting_clicked()
 {
-
+        //JlCompress::extractDir("d:\\test.zip", "d:\\test");//解压缩
 }
 
 //转移设置 TODO:
 void MainWindow::on_transferSetting_clicked()
 {
-
+    
 }
 
 //手动输入SteamID TODO: 进一步加强
@@ -875,15 +896,15 @@ void MainWindow::on_getLauncherPathBtn_clicked()
 
 void MainWindow::on_antiHarmony_clicked()
 {
-
+    
 }
 
 void MainWindow::on_reloadHarmony_clicked()
 {
-
+    
 }
 
 void MainWindow::on_solveVAC_clicked()
 {
-
+    
 }
