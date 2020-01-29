@@ -3,7 +3,7 @@
 //引入库文件，位置必须是绝对地址，有改变务必改动
 #pragma comment(lib, "E:/QtProject/CSGO Toolbox/CSGO-Toolbox/libShareCodeToURLcs.lib" )
 __declspec(dllimport) int api_Urlstring(const char* a);
-
+#include <QtDebug>
 QString steamPath = "";
 QString launcherPath = "";
 QString csgoPath = "";
@@ -422,7 +422,7 @@ QString MainWindow::getValue(QString input, QString key)
     return get_until(input, "\"");
 }
 
-//获取SteamID，一般9位数字 TODO:
+//获取SteamID，一般9位数字 TODO: 把数据按照格式显示出来，供用户点击选择 TODO: 错误处理
 void MainWindow::getSteamID()
 {
     QString fileName = "";
@@ -445,13 +445,13 @@ void MainWindow::getSteamID()
     fStream.setCodec("utf-8");  //解决乱码问题
     QString content =  fStream.readAll();
     f.close();
-
+    //去除无用字符
     content.replace("\n", "");
     content.replace("\r", "");
     content.replace("\t", "");
     search_and_cut(content, "users\"{");
     QStringList SteamID,AccountName,PersonaName;
-    ui->debug->appendPlainText("SteamID \t 账号名 \t 昵称  ");
+    //获取数据
     for(int i = 0 ; true ; i++){
         search_and_cut(content, "\"");
         //获取SteamID
@@ -469,43 +469,58 @@ void MainWindow::getSteamID()
         t = getValue(content ,"PersonaName");
         if( !t.isEmpty() )
             PersonaName <<  t;
-        //debug
-        ui->debug->appendPlainText(SteamID.at(i) + "\t" + AccountName.at(i) + "\t" + PersonaName.at(i));
         search_and_cut(content, "}");
         if( content.startsWith("}") )
             break;
     }
+    //单用户时直接确定ID
+    if(SteamID.length() == 1){
+        steamID = SteamID.at(0);
+        userName = PersonaName.at(0);
+        ui->debug->appendPlainText("检测到只有一个用户ID，已设置好SteamID！\n SteamID -< " + steamID);
+    }
+    else{   //显示在tabview上 用户按一次按钮完成选择        //TODO: debug
+        short n = SteamID.length();
+        ui->userdata->setColumnCount(4);
+        ui->userdata->setRowCount(n);
+        ui->userdata->setColumnWidth(0,80);
+        ui->userdata->setColumnWidth(1,100);
+        ui->userdata->setColumnWidth(2,115);
+        ui->userdata->setColumnWidth(3,83);
 
-    //ui->debug->appendPlainText(content);
+        QStringList header;
+        header <<  "SteamID" << "账号" << "昵称" << "按钮";
+        ui->userdata->setHorizontalHeaderLabels(header);
 
-    //启动项修改: "Software" -> "730" -> "LaunchOptions" 利用String相关操作依次查找匹配的第一个串位置&删掉该串之前的内容
-    //读取C:\Program Files (x86)\Steam\userdata\354813078\config\localconfig.vdf
-    //CSGO没有安装好时没有"LaunchOptions" 这一项 手动在第一个"}"之前添加
-    /*
-    //国服除了csgolauncher.exe名称不一样 CSGO应该是安装在steam位置之下 其他没有不同
-    //注册表似乎找不到对应表项
+        for(short i = 0; i < n; i++){
+            ui->userdata->setItem(i, 0, new QTableWidgetItem(SteamID.at(i)));
+            ui->userdata->setItem(i, 1, new QTableWidgetItem(AccountName.at(i)));
+            ui->userdata->setItem(i, 2, new QTableWidgetItem(PersonaName.at(i)));
 
-    //获取用户ID: "users" -> " -> 读17位&检测是否纯数字 -> "AccountName"tabtab" ..."得到账号名 同理昵称
-    //                        "}..."" -> 继续读17位id 同上 ...
-    //利用String相关操作依次查找匹配的第一个串位置&删掉该串之前的内容
-    //读取C:\Program Files (x86)\Steam\config\loginusers.vdf
-    */
-    /*"users"
-    {
-        "76561198315078806"
-        {
-            "AccountName"		"_jerry_dota2"
-            "PersonaName"		"Purp1e"
-            ...若干行
+            QPushButton *button = new QPushButton();
+            connect(button, SIGNAL(clicked()), this, SLOT(onTableBtnClicked()));
+            // 在QTableWidget中添加控件
+            ui->userdata->setCellWidget(i, 3, button);
+            button->setProperty("id", i);
+            button->setProperty("text", "选择");
+            button->setProperty("status", "normal");
         }
-        "第二个id"
-        {
-            ...
-        }
-    */
-
+    }
 }
-//ui->tabWidget->setCurrentIndex(0); 设置当前tab第0页
+
+void MainWindow::onTableBtnClicked()
+{
+    QPushButton *senderObj=qobject_cast<QPushButton*>(sender());
+    if(senderObj == nullptr)
+    {
+        return;
+    }
+    QModelIndex idx = ui->userdata->indexAt(QPoint(senderObj->frameGeometry().x(),senderObj->frameGeometry().y()));
+    int row = idx.row();
+    steamID = ui->userdata->item(row, 0)->text();
+    userName = ui->userdata->item(row, 2)->text();
+    ui->debug->setPlainText( "SteamID <- " + steamID );
+}
 
 // 转换DEMO分享代码 获得真实下载链接  注意这里不可对dragArea赋非空值否则会死循环
 void MainWindow::sharecodeTransform()
@@ -582,15 +597,19 @@ void MainWindow::sharecodeTransform()
 //判断一个字符串是否为纯数字
 bool MainWindow::isDigitStr(QString src)
 {
-    QByteArray ba = src.toLatin1();//QString 转换为 char*
+    QByteArray ba = src.toLatin1();
     const char *s = ba.data();
-
-    while(*s && *s>='0' && *s<='9') s++;
-
-    if (*s)     //不是纯数字
-        return false;
-    else       //纯数字
-        return true;
+    bool bret = true;
+    while(*s)
+    {
+        if(*s>='0' && *s<='9'){}
+        else {
+            bret = false;
+            break;
+        }
+        s++;
+    }
+    return bret;
 }
 
 //拖拽区域文字发生改变时调用 注意这里不可对dragArea赋非空值否则会死循环
@@ -710,6 +729,12 @@ void MainWindow::on_opencsgocfg_clicked()
 
     QString tPath = csgoPath;
     tPath.replace("csgo.exe", "csgo/cfg", Qt::CaseInsensitive);
+
+    // 检查目录是否存在，若不存在则新建
+    QDir dir;
+    if (!dir.exists(tPath))
+        dir.mkpath(tPath);
+
     QUrl url( "file:///" + tPath );
     QDesktopServices::openUrl(url);
 }
@@ -722,8 +747,12 @@ void MainWindow::on_openlocalcfg_clicked()
     }
     QString tPath = steamPath;
     tPath.replace("steam.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
-    if( !QFile(tPath).exists() )    //TODO: 路径不存在的处理 直接创建一个文件夹？
-        tPath.replace(steamID + "/730/local/cfg", "");
+
+    // 检查目录是否存在，若不存在则新建
+    QDir dir;
+    if (!dir.exists(tPath))
+        dir.mkpath(tPath);
+
     QUrl url( "file:///" + tPath );
     QDesktopServices::openUrl(url);
 }
@@ -736,14 +765,17 @@ void MainWindow::on_openCNlocalcfg_clicked()
     }
     QString tPath = launcherPath;
     tPath.replace("csgolauncher.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
-    if( !QFile(tPath).exists() )    //TODO: 路径不存在的处理 直接创建一个文件夹？
-        tPath.replace(steamID + "/730/local/cfg", "");
+    // 检查目录是否存在，若不存在则新建
+    QDir dir;
+    if (!dir.exists(tPath))
+        dir.mkpath(tPath);
+
     QUrl url( "file:///" + tPath );
     QDesktopServices::openUrl(url);
 }
 
 //手动设置路径
-void MainWindow::on_manual_clicked()
+void MainWindow::on_manualBtn_clicked()
 {
     QString tPath = "";
     if( QString(steamPath).isEmpty() ){
@@ -794,9 +826,13 @@ void MainWindow::on_transferSetting_clicked()
 //手动输入SteamID TODO: 进一步加强
 void MainWindow::on_ManualSteamID_clicked()
 {
-    if( ui->textID->toPlainText().isEmpty() )
-        return;
     QString tID = ui->textID->toPlainText();
+    if( tID.isEmpty() )
+        return;
+    else if( !isDigitStr(tID) || tID.length() < 8 || tID.length() > 10 ){
+        ui->debug->appendPlainText("ID格式有误！");
+        return;
+    }
     QString tPath = "";
     if( QFile(steamPath).exists() && steamPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
         tPath = steamPath;
@@ -808,7 +844,7 @@ void MainWindow::on_ManualSteamID_clicked()
             return;
         }
         else
-            ui->debug->appendPlainText("ID不存在");
+            ui->debug->appendPlainText("userdata目录下检测不到该ID对应的文件夹，注意检测ID正误");
     }
     else if( QFile(launcherPath).exists() && launcherPath.endsWith("csgolauncher.exe", Qt::CaseInsensitive) ){
         tPath = launcherPath;
@@ -820,8 +856,34 @@ void MainWindow::on_ManualSteamID_clicked()
             return;
         }
         else
-            ui->debug->appendPlainText("ID不存在");
+            ui->debug->appendPlainText("userdata目录下检测不到该ID对应的文件夹，注意检测ID正误");
     }
-    else
-        ui->debug->appendPlainText("无Steam或国服启动器路径，无法识别！");
+    else{
+        ui->debug->appendPlainText("无Steam或国服启动器路径，无法识别，注意检测ID正误");
+    }
+}
+
+void MainWindow::on_getUserDataBtn_clicked()
+{
+    getSteamID();
+}
+
+void MainWindow::on_getLauncherPathBtn_clicked()
+{
+    getLauncherPath();
+}
+
+void MainWindow::on_antiHarmony_clicked()
+{
+
+}
+
+void MainWindow::on_reloadHarmony_clicked()
+{
+
+}
+
+void MainWindow::on_solveVAC_clicked()
+{
+
 }

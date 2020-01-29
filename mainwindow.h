@@ -17,6 +17,7 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QClipboard>
+#include <QStandardItemModel>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -47,7 +48,7 @@ private slots:
 
     void on_openlocalcfg_clicked();
 
-    void on_manual_clicked();
+    void on_manualBtn_clicked();
 
     void on_backupSetting_clicked();
 
@@ -58,6 +59,18 @@ private slots:
     void on_openCNlocalcfg_clicked();
 
     void on_ManualSteamID_clicked();
+
+    void onTableBtnClicked();
+
+    void on_getUserDataBtn_clicked();
+
+    void on_getLauncherPathBtn_clicked();
+
+    void on_antiHarmony_clicked();
+
+    void on_reloadHarmony_clicked();
+
+    void on_solveVAC_clicked();
 
 private:
     Ui::MainWindow *ui;

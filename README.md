@@ -1,5 +1,5 @@
 # CSGO工具箱 项目说明
-> 2020.01.23 23pm last edited by Purp1e
+> 2020.01.2 21pm last edited by Purp1e
 
 ## 一、CSGO工具箱介绍
 
@@ -13,7 +13,7 @@ CSGO工具箱是旨在方便CSGO玩家调整、修改、保存、备份和转移
 
 本项目使用[Qt 5.14.0](http://download.qt.io/archive/qt/5.14/5.14.0/) + [MSVC 2017](ed2k://|file|en_visual_studio_community_2015_x86_dvd_6847364.iso|3965825024|6A7D8489BB2877E6BB8ACB2DD187B637|/) + [qt-vsaddin-msvc2017-2.4.3](http://download.qt.io/archive/vsaddin/2.4.3/) + Git，系统Win10 64位。如果需要参与开发，请配置好这些环境。
 
-当前项目要用到一些外部DLL文件，需要注意。
+当前项目要用到一些外部文件，在`.dll/`中，需要手动将这些文件移动到`debug`或`release`文件夹中。
 
 ### 2. 参与开发
 
