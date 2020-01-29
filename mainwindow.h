@@ -17,6 +17,7 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QClipboard>
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -75,7 +76,7 @@ private:
     bool isDigitStr(QString src);
     void getSteamID();
     //这三个函数封装用于读取vdf
-    QString search_and_cut(QString input, QString key);
+    QString search_and_cut(QString &input, QString key);
     QString get_until(QString input, QString end);
     QString getValue(QString input, QString key);
 };

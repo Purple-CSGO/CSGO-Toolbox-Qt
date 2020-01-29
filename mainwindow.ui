@@ -140,7 +140,7 @@
         <widget class="QPushButton" name="opencsgocfg">
          <property name="geometry">
           <rect>
-           <x>10</x>
+           <x>140</x>
            <y>10</y>
            <width>121</width>
            <height>31</height>
@@ -166,7 +166,7 @@
         <widget class="QPushButton" name="openlocalcfg">
          <property name="geometry">
           <rect>
-           <x>140</x>
+           <x>10</x>
            <y>10</y>
            <width>121</width>
            <height>31</height>
@@ -257,7 +257,7 @@
         <widget class="QPushButton" name="openCNlocalcfg">
          <property name="geometry">
           <rect>
-           <x>140</x>
+           <x>10</x>
            <y>60</y>
            <width>121</width>
            <height>31</height>
@@ -293,6 +293,19 @@
           <string>国服反和谐恢复</string>
          </property>
         </widget>
+        <widget class="QTextEdit" name="textID">
+         <property name="geometry">
+          <rect>
+           <x>140</x>
+           <y>60</y>
+           <width>121</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="placeholderText">
+          <string>steamID</string>
+         </property>
+        </widget>
         <zorder>debug</zorder>
         <zorder>userdata</zorder>
         <zorder>opencsgocfg</zorder>
@@ -307,6 +320,7 @@
         <zorder>ManualSteamID</zorder>
         <zorder>antiHarmony_4</zorder>
         <zorder>reloadHarmony</zorder>
+        <zorder>textID</zorder>
        </widget>
        <widget class="QWidget" name="TabDemo">
         <property name="maximumSize">

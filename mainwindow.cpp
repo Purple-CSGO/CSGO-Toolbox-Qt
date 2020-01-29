@@ -24,8 +24,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->labelDragArea->setAttribute(Qt::WA_TransparentForMouseEvents,true);
     readSetting();
     getSteamPath();
-    getLauncherPath();
+    //getLauncherPath();
     getCsgoPath();
+    getSteamID();
     //solveVacIssue(steamPath);
 }
 
@@ -188,7 +189,7 @@ bool MainWindow::getSteamPath()
     }
 }
 
-//获取国服启动器LauncherPath路径
+//获取国服启动器csgoLauncher路径
 bool MainWindow::getLauncherPath()
 {
     //第一步 读取设置中的launcherPath 已经在main()中调用 readSetting()
@@ -215,7 +216,7 @@ bool MainWindow::getLauncherPath()
         }
     }
 
-    //第步 自动获取路径失败 提示用户手动选择路径
+    //第四步 自动获取路径失败 提示用户手动选择路径
     if( QFile(tPath).exists() && tPath.endsWith("csgolauncher.exe", Qt::CaseInsensitive) ){
         launcherPath = tPath;
         return true;
@@ -226,7 +227,7 @@ bool MainWindow::getLauncherPath()
     }
 }
 
-//获取CSGO路径  TODO: 添加默认路径
+//获取CSGO路径
 bool MainWindow::getCsgoPath()
 {
     //第一步 读取设置中的csgoPath 已经在main()中调用 readSetting()
@@ -395,34 +396,45 @@ void MainWindow::solveVacIssue(QString Path)
 
 }
 
-QString MainWindow::search_and_cut(QString input, QString key)
-{   //剪切不掉相应的部分
-    QString t = input;
-    qint32 i = t.indexOf(key);
-    //ui->debug->appendPlainText();
+//剪切掉相应的部分 aaakeybbb -> bbb
+QString MainWindow::search_and_cut(QString &input, QString key)
+{
+    qint32 i = input.indexOf(key, Qt::CaseInsensitive);
     if( i >= 0 )
         input.remove(0, i + key.length() );
-    else
-        ui->debug->appendPlainText("GG");
-    ui->debug->appendPlainText(t);
-    return t;
+
+    return "";
 }
 
+//把第一次出现end之前的串提取出来  xxxendyyy -> xxx
 QString MainWindow::get_until(QString input, QString end)
 {
-    return "";
+    int i = input.indexOf(end, Qt::CaseInsensitive);
+    return input.left( i );
 }
 
+//封装search_and_cut()和get_until()实现从字符串中提取 "key"  "data"格式的data串
 QString MainWindow::getValue(QString input, QString key)
 {
-    return "";
+    key = "\"" + key + "\"";
+    search_and_cut(input, key);
+    search_and_cut(input, "\"");
+    return get_until(input, "\"");
 }
 
 //获取SteamID，一般9位数字 TODO:
 void MainWindow::getSteamID()
 {
-    QString fileName = steamPath;
-    fileName.replace("steam.exe" ,"config\\loginusers.vdf", Qt::CaseInsensitive );
+    QString fileName = "";
+    if( QFile(steamPath).exists() && steamPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
+        fileName = steamPath;
+        fileName.replace("steam.exe" ,"config\\loginusers.vdf", Qt::CaseInsensitive );
+    }
+    else if( QFile(launcherPath).exists() && launcherPath.endsWith("csgolauncher.exe", Qt::CaseInsensitive) ){
+        fileName = launcherPath;
+        fileName.replace("csgolauncher.exe" ,"config\\loginusers.vdf", Qt::CaseInsensitive );
+    }
+    else return;
 
     QFile f( fileName );
     if ( !f.exists() ) //文件不存在
@@ -434,7 +446,36 @@ void MainWindow::getSteamID()
     QString content =  fStream.readAll();
     f.close();
 
-    content = search_and_cut(content ,"Name");
+    content.replace("\n", "");
+    content.replace("\r", "");
+    content.replace("\t", "");
+    search_and_cut(content, "users\"{");
+    QStringList SteamID,AccountName,PersonaName;
+    ui->debug->appendPlainText("SteamID \t 账号名 \t 昵称  ");
+    for(int i = 0 ; true ; i++){
+        search_and_cut(content, "\"");
+        //获取SteamID
+        QString t = get_until(content, "\"");
+        if( !t.isEmpty() ){
+            qulonglong temp = t.toULongLong();
+            temp -= 76561197960265728;
+            SteamID <<  QString::number( temp );
+        }
+        //获取账号名
+        t = getValue(content ,"AccountName");
+        if( !t.isEmpty() )
+            AccountName <<  t;
+        //获取用户昵称
+        t = getValue(content ,"PersonaName");
+        if( !t.isEmpty() )
+            PersonaName <<  t;
+        //debug
+        ui->debug->appendPlainText(SteamID.at(i) + "\t" + AccountName.at(i) + "\t" + PersonaName.at(i));
+        search_and_cut(content, "}");
+        if( content.startsWith("}") )
+            break;
+    }
+
     //ui->debug->appendPlainText(content);
 
     //启动项修改: "Software" -> "730" -> "LaunchOptions" 利用String相关操作依次查找匹配的第一个串位置&删掉该串之前的内容
@@ -461,18 +502,6 @@ void MainWindow::getSteamID()
         {
             ...
         }
-    //或者在config.vdf中查找"SteamID" 或"Accounts"
-                    "Accounts"
-                    {
-                        "_jerry_dota2"
-                        {
-                            "SteamID"		"76561198315078806"
-                        }
-                        "_im_ai_"
-                        {
-                            "SteamID"		"76561198107125441"
-                        }
-                    }
     */
 
 }
@@ -765,29 +794,34 @@ void MainWindow::on_transferSetting_clicked()
 //手动输入SteamID TODO: 进一步加强
 void MainWindow::on_ManualSteamID_clicked()
 {
-    if( ui->debug->toPlainText().isEmpty() )
+    if( ui->textID->toPlainText().isEmpty() )
         return;
-    QString tID = ui->debug->toPlainText();
+    QString tID = ui->textID->toPlainText();
     QString tPath = "";
-    ui->debug->appendPlainText("1");
     if( QFile(steamPath).exists() && steamPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
         tPath = steamPath;
         tPath.replace("Steam.exe", "userdata/" +tID, Qt::CaseInsensitive);
-        ui->debug->appendPlainText("2");
         if( QFile::exists( tPath ) ){
             steamID = tID;
+            ui->debug->appendPlainText("成功！");
+            ui->textID->setText("");
             return;
         }
+        else
+            ui->debug->appendPlainText("ID不存在");
     }
     else if( QFile(launcherPath).exists() && launcherPath.endsWith("csgolauncher.exe", Qt::CaseInsensitive) ){
-        QString tPath = launcherPath;
+        tPath = launcherPath;
         tPath.replace("csgolauncher.exe", "userdata/" +tID, Qt::CaseInsensitive);
-        ui->debug->appendPlainText("3");
         if( QFile::exists( tPath ) ){
             steamID = tID;
+            ui->debug->appendPlainText("成功！");
+            ui->textID->setText("");
             return;
         }
+        else
+            ui->debug->appendPlainText("ID不存在");
     }
     else
-        ui->debug->appendPlainText("ID错误！");
+        ui->debug->appendPlainText("无Steam或国服启动器路径，无法识别！");
 }
