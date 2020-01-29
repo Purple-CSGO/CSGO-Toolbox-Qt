@@ -1,5 +1,40 @@
 <RCC>
-    <qresource prefix="/">
+    <qresource prefix="/libcs">
         <file>libShareCodeToURLcs.lib</file>
+    </qresource>
+    <qresource prefix="/lib"/>
+    <qresource prefix="/libQuazip"/>
+    <qresource prefix="/">
+        <file>lib/crypt.h</file>
+        <file>lib/ioapi.h</file>
+        <file>lib/JlCompress.cpp</file>
+        <file>lib/JlCompress.h</file>
+        <file>lib/qioapi.cpp</file>
+        <file>lib/quaadler32.cpp</file>
+        <file>lib/quaadler32.h</file>
+        <file>lib/quachecksum32.h</file>
+        <file>lib/quacrc32.cpp</file>
+        <file>lib/quacrc32.h</file>
+        <file>lib/quagzipfile.cpp</file>
+        <file>lib/quagzipfile.h</file>
+        <file>lib/quaziodevice.cpp</file>
+        <file>lib/quaziodevice.h</file>
+        <file>lib/quazip.cpp</file>
+        <file>lib/quazip.h</file>
+        <file>lib/quazip.pro</file>
+        <file>lib/quazip_global.h</file>
+        <file>lib/quazipd.lib</file>
+        <file>lib/quazipdir.cpp</file>
+        <file>lib/quazipdir.h</file>
+        <file>lib/quazipfile.cpp</file>
+        <file>lib/quazipfile.h</file>
+        <file>lib/quazipfileinfo.cpp</file>
+        <file>lib/quazipfileinfo.h</file>
+        <file>lib/quazipnewinfo.cpp</file>
+        <file>lib/quazipnewinfo.h</file>
+        <file>lib/unzip.c</file>
+        <file>lib/unzip.h</file>
+        <file>lib/zip.c</file>
+        <file>lib/zip.h</file>
     </qresource>
 </RCC>

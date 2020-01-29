@@ -5,5 +5,6 @@
         <file>dll/libShareCodeToURLcs.dll</file>
         <file>dll/steam_api.dll</file>
         <file>dll/steam_appid.txt</file>
+        <file>dll/quazipd.dll</file>
     </qresource>
 </RCC>
