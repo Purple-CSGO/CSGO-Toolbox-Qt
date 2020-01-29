@@ -4,7 +4,7 @@
     </qresource>
     <qresource prefix="/lib"/>
     <qresource prefix="/libQuazip"/>
-    <qresource prefix="/">
+    <qresource prefix="/libquazip">
         <file>lib/crypt.h</file>
         <file>lib/ioapi.h</file>
         <file>lib/JlCompress.cpp</file>
