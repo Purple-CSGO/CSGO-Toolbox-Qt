@@ -53,15 +53,9 @@ private slots:
 
     void on_backupSetting_clicked();
 
-    void on_restoreSetting_clicked();
-
-    void on_transferSetting_clicked();
-
     void on_openCNlocalcfg_clicked();
 
     void on_ManualSteamID_clicked();
-
-    void onTableBtnClicked();
 
     void on_getUserDataBtn_clicked();
 
@@ -72,6 +66,16 @@ private slots:
     void on_reloadHarmony_clicked();
 
     void on_solveVAC_clicked();
+
+    void onTableBtnClicked();
+
+    void onRestoreBtnClicked();
+
+    void onDeleteBtnClicked();
+
+    void on_refreshBackup_clicked();
+
+    void on_openBackupLoc_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -93,5 +97,8 @@ private:
     QString search_and_cut(QString &input, QString key);
     QString get_until(QString input, QString end);
     QString getValue(QString input, QString key);
+    //
+    void refreshBackup();
+
 };
 #endif // MAINWINDOW_H
