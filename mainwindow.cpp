@@ -829,7 +829,8 @@ void MainWindow::on_backupSetting_clicked()
     if (!dir.exists(zipPath))   dir.mkpath(zipPath);
 
     JlCompress::compressDir(zipPath + zipName, tPath); //压缩
-    //TODO: 压缩后的提示
+    //TODO: 压缩后的操作
+    QMessageBox::warning(this, "提示", "备份成功！");
 }
 
 //恢复设置 TODO:

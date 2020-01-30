@@ -5,6 +5,8 @@
     <qresource prefix="/lib"/>
     <qresource prefix="/libQuazip"/>
     <qresource prefix="/libquazip">
+        <file>lib/quazip.lib</file>
+        <file>lib/quazipd.lib</file>
         <file>lib/crypt.h</file>
         <file>lib/ioapi.h</file>
         <file>lib/JlCompress.cpp</file>
@@ -23,7 +25,6 @@
         <file>lib/quazip.h</file>
         <file>lib/quazip.pro</file>
         <file>lib/quazip_global.h</file>
-        <file>lib/quazipd.lib</file>
         <file>lib/quazipdir.cpp</file>
         <file>lib/quazipdir.h</file>
         <file>lib/quazipfile.cpp</file>

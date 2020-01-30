@@ -15,15 +15,14 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-SOURCES += \
-    main.cpp \
-    mainwindow.cpp
+SOURCES += main.cpp\
+    MainWindow.cpp
 
 HEADERS += \
-    mainwindow.h
+    MainWindow.h
 
-FORMS += \
-    mainwindow.ui
+FORMS     += \
+    MainWindow.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -55,8 +54,13 @@ SUBDIRS += \
     lib/quazip.pro \
     lib/quazip.pro
 
-win32: LIBS += -L$$PWD/lib/ -lquazipd
-
 INCLUDEPATH += $$[QT_INSTALL_HEADERS]/QtZlib
-
+INCLUDEPATH += $$PWD/.
 DEPENDPATH += $$PWD/.
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/lib/ -lquazip
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/lib/ -lquazipd
+win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/lib/libquazip.a
+else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/lib/libquazipd.a
+else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/lib/quazip.lib
+else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/lib/quazipd.lib
