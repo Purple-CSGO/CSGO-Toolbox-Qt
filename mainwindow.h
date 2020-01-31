@@ -73,9 +73,11 @@ private slots:
 
     void onDeleteBtnClicked();
 
-    void on_refreshBackup_clicked();
-
     void on_openBackupLoc_clicked();
+
+    void on_zipBackupdata_clicked();
+
+    void on_opencsgoDir_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -99,6 +101,10 @@ private:
     QString getValue(QString input, QString key);
     //
     void refreshBackup();
+    void onSteamPathChanged();
+    void onCsgoPathChanged();
+    void onLauncherPathChanged();
+    void onSteamIDChanged();
 
 };
 #endif // MAINWINDOW_H

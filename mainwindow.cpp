@@ -11,6 +11,7 @@ QString steamID = "";
 QString userName = "";
 bool autoClip = false;
 bool autoDownload = false;
+bool backupdataZipped = false;
 
 //TODO: 加载过程的文字显示在Loading界面上
 MainWindow::MainWindow(QWidget *parent)
@@ -20,12 +21,16 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     ui->labelDragArea->setAttribute(Qt::WA_TransparentForMouseEvents,true);
+    ui->checkSteamPath->setAttribute(Qt::WA_TransparentForMouseEvents,true);
+    ui->checkCsgoPath->setAttribute(Qt::WA_TransparentForMouseEvents,true);
+    ui->checkLauncherPath->setAttribute(Qt::WA_TransparentForMouseEvents,true);
     readSetting();
     getSteamPath();
     //getLauncherPath();
     getCsgoPath();
     getSteamID();
     refreshBackup();
+    //cmd("dir");
     //solveVacIssue(steamPath);
 }
 
@@ -80,6 +85,7 @@ void MainWindow::readSetting()
     if( !QFile::exists( csgoPath ) || !csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive ) )
         csgoPath = "";
 
+    onSteamPathChanged();onCsgoPathChanged();onLauncherPathChanged();onSteamIDChanged();
     //设置ui中的checkbox状态
     if(autoClip == true)
         ui->autoClip->setCheckState(Qt::Checked);
@@ -181,6 +187,7 @@ bool MainWindow::getSteamPath()
     //第五步 自动获取路径失败 提示用户手动选择路径
     if( QFile(tPath).exists() && tPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
         steamPath = tPath;
+        onSteamPathChanged();
         return true;
     }
     else{
@@ -220,6 +227,7 @@ bool MainWindow::getLauncherPath()
     //第四步 自动获取路径失败 提示用户手动选择路径
     if( QFile(tPath).exists() && tPath.endsWith("csgolauncher.exe", Qt::CaseInsensitive) ){
         launcherPath = tPath;
+        onLauncherPathChanged();
         return true;
     }
     else{
@@ -284,6 +292,7 @@ bool MainWindow::getCsgoPath()
     //第五步 自动获取路径失败 提示用户手动选择路径
     if( QFile(tPath).exists() && tPath.endsWith("csgo.exe", Qt::CaseInsensitive) ){
         csgoPath = tPath;
+        onCsgoPathChanged();
         return true;
     }
     else{
@@ -315,8 +324,8 @@ QString MainWindow::cmd(QString command)
     p.closeWriteChannel();  //关闭写通道 ，解决未响应问题
     p.waitForFinished();
     temp = QString::fromLocal8Bit(p.readAllStandardOutput());
-    temp = temp.replace("\r", "");
-    temp = temp.replace("\n", "");
+    temp.replace("\r", "");
+    temp.replace("\n", "");
     if( QString(temp).isEmpty() )
         temp = QString::fromLocal8Bit(p.readAllStandardError());
     p.close();
@@ -334,8 +343,9 @@ QString MainWindow::cmd_dir(QString command, QString dir)
     p.closeWriteChannel();  //关闭写通道 ，解决未响应问题
     p.waitForFinished();
     temp = QString::fromLocal8Bit(p.readAllStandardOutput());
-    temp = temp.replace("\r", "");
-    temp = temp.replace("\n", "");
+    temp.replace("\r", "");
+    temp.replace("\n", "");
+    //temp
     if( QString(temp).isEmpty() )
         temp = QString::fromLocal8Bit(p.readAllStandardError());
     p.close();
@@ -478,30 +488,32 @@ void MainWindow::getSteamID()
     if(SteamID.length() == 1){
         steamID = SteamID.at(0);
         userName = PersonaName.at(0);
-        ui->debug->appendPlainText("检测到只有一个用户ID，已设置好SteamID！\n SteamID -< " + steamID);
+        onSteamIDChanged();
+        //ui->debug->appendPlainText("检测到只有一个用户ID，已设置好SteamID！\n SteamID -< " + steamID);
     }
     else{   //显示在tabview上 用户按一次按钮完成选择        //TODO: debug
         short n = SteamID.length();
-        ui->userdata->setColumnCount(4);
+        ui->userdata->setColumnCount(3);
         ui->userdata->setRowCount(n);
-        ui->userdata->setColumnWidth(0,80);
-        ui->userdata->setColumnWidth(1,100);
-        ui->userdata->setColumnWidth(2,115);
-        ui->userdata->setColumnWidth(3,83);
+        ui->userdata->setColumnWidth(0,98);
+        ui->userdata->setColumnWidth(1,200);
+        ui->userdata->setColumnWidth(2,110);
+        //ui->userdata->setColumnWidth(3,83);
 
         QStringList header;
-        header <<  "SteamID" << "账号" << "昵称" << "按钮";
+        header <<  "SteamID" << "昵称" << "";
         ui->userdata->setHorizontalHeaderLabels(header);
 
         for(short i = 0; i < n; i++){
+            ui->userdata->setRowHeight(i, 35);
             ui->userdata->setItem(i, 0, new QTableWidgetItem(SteamID.at(i)));
-            ui->userdata->setItem(i, 1, new QTableWidgetItem(AccountName.at(i)));
-            ui->userdata->setItem(i, 2, new QTableWidgetItem(PersonaName.at(i)));
-
+            ui->userdata->item(i,0)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
+            ui->userdata->setItem(i, 1, new QTableWidgetItem(PersonaName.at(i)));
+            //ui->userdata->item(i,1)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
             QPushButton *button = new QPushButton();
             connect(button, SIGNAL(clicked()), this, SLOT(onTableBtnClicked()));
             // 在QTableWidget中添加控件
-            ui->userdata->setCellWidget(i, 3, button);
+            ui->userdata->setCellWidget(i, 2, button);
             button->setProperty("id", i);
             button->setProperty("text", "选择");
             button->setProperty("status", "normal");
@@ -520,8 +532,9 @@ void MainWindow::onTableBtnClicked()
     QModelIndex idx = ui->userdata->indexAt(QPoint(senderObj->frameGeometry().x(),senderObj->frameGeometry().y()));
     int row = idx.row();
     steamID = ui->userdata->item(row, 0)->text();
-    userName = ui->userdata->item(row, 2)->text();
-    ui->debug->setPlainText( "SteamID <- " + steamID );
+    userName = ui->userdata->item(row, 1)->text();
+    //ui->debug->setPlainText( "SteamID <- " + steamID );
+    onSteamIDChanged();
 }
 
 // 转换DEMO分享代码 获得真实下载链接  注意这里不可对dragArea赋非空值否则会死循环
@@ -825,7 +838,7 @@ void MainWindow::on_backupSetting_clicked()
     else return;
 
     QDateTime current_date_time = QDateTime::currentDateTime();
-    QString zipName = current_date_time.toString("yyyy年MM月dd日_%1_hhmmss").arg(userName.left(6)) + ".zip";
+    QString zipName = current_date_time.toString("yyyy-MM-dd_hh-mm-ss_%1").arg(userName.left(6)) + ".zip";
     QString zipPath = QCoreApplication::applicationDirPath() + "/备份/";
     QDir dir;
     //如果路径不存在则创建
@@ -865,15 +878,16 @@ void MainWindow::refreshBackup()
     short n = files.length();
     ui->backupdata->setColumnCount(3);
     ui->backupdata->setRowCount(n);
-    ui->backupdata->setColumnWidth(0,248);
-    ui->backupdata->setColumnWidth(1,65);
-    ui->backupdata->setColumnWidth(2,65);
+    ui->backupdata->setColumnWidth(0,268);
+    ui->backupdata->setColumnWidth(1,70);
+    ui->backupdata->setColumnWidth(2,70);
 
     QStringList header;
     header <<  "备份文件" << "" << "" ;
     ui->backupdata->setHorizontalHeaderLabels(header);
 
     for(short i = 0; i < n; i++){
+        ui->backupdata->setRowHeight(i, 35);
         ui->backupdata->setItem(i, 0, new QTableWidgetItem(files.at( n - i - 1 )));
 
         QPushButton *DeleteButton = new QPushButton();
@@ -891,6 +905,42 @@ void MainWindow::refreshBackup()
         RestoreButton->setProperty("status", "normal");
     }
     ui->backupdata->setEditTriggers(QAbstractItemView::NoEditTriggers);
+}
+
+void MainWindow::onSteamPathChanged()
+{
+    if( QFile(steamPath).exists() && steamPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
+        ui->checkSteamPath->setCheckState(Qt::Checked);
+    }
+    else
+        ui->checkSteamPath->setCheckState(Qt::Unchecked);
+}
+
+void MainWindow::onCsgoPathChanged()
+{
+    if( QFile(csgoPath).exists() && csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive) ){
+        ui->checkCsgoPath->setCheckState(Qt::Checked);
+    }
+    else
+        ui->checkCsgoPath->setCheckState(Qt::Unchecked);
+}
+
+void MainWindow::onLauncherPathChanged()
+{
+    if( QFile(launcherPath).exists() && launcherPath.endsWith("csgolauncher.exe", Qt::CaseInsensitive) ){
+        ui->checkLauncherPath->setCheckState(Qt::Checked);
+    }
+    else
+        ui->checkLauncherPath->setCheckState(Qt::Unchecked);
+}
+
+void MainWindow::onSteamIDChanged()
+{
+    if( steamID.isEmpty() ){
+        ui->checkSteamID->setText("ID: ×");
+    }
+    else
+        ui->checkSteamID->setText("ID: " + steamID);
 }
 
 void MainWindow::onRestoreBtnClicked()
@@ -980,11 +1030,6 @@ void MainWindow::onDeleteBtnClicked()
     refreshBackup();
 }
 
-void MainWindow::on_refreshBackup_clicked()
-{
-    refreshBackup();
-}
-
 void MainWindow::on_openBackupLoc_clicked()
 {
     if( steamID.isEmpty() )
@@ -1059,17 +1104,84 @@ void MainWindow::on_getLauncherPathBtn_clicked()
     getLauncherPath();
 }
 
+//国服反和谐
 void MainWindow::on_antiHarmony_clicked()
 {
+    QStringList files;
+    QString tPath = "";
+    if( QFile(csgoPath).exists() && csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive) ){
+        tPath = csgoPath;
+        tPath.replace("csgo.exe", "csgo/", Qt::CaseInsensitive);
+    }
+    else return;
+    files << "pakxv_audiochinese_000" << "pakxv_audiochinese_001" << "pakxv_audiochinese_002"
+          << "pakxv_audiochinese_003"   << "pakxv_audiochinese_004" <<  "pakxv_audiochinese_dir"
+          << "pakxv_lowviolence_000"      << "pakxv_lowviolence_dir"        <<  "pakxv_perfectworld_000"
+          <<"pakxv_perfectworld_001"     <<  "pakxv_perfectworld_dir";
+    //.vpk->.bak
+    for (int i = 0; i < files.length() ; i++) {
+        if( QFile::exists( tPath + files.at(i) + ".vpk" ) )
+            QFile::rename(tPath + files.at(i) + ".vpk", tPath + files.at(i) + ".bak");
+    }
 
+    //TODO: 压缩后的操作
+    QMessageBox::warning(this, "提示", "反和谐成功！");
 }
 
+//恢复反和谐
 void MainWindow::on_reloadHarmony_clicked()
 {
+    QStringList files;
+    QString tPath = "";
+    if( QFile(csgoPath).exists() && csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive) ){
+        tPath = csgoPath;
+        tPath.replace("csgo.exe", "csgo/", Qt::CaseInsensitive);
+    }
+    else return;
+    files << "pakxv_audiochinese_000" << "pakxv_audiochinese_001" << "pakxv_audiochinese_002"
+          << "pakxv_audiochinese_003"   << "pakxv_audiochinese_004" <<  "pakxv_audiochinese_dir"
+          << "pakxv_lowviolence_000"      << "pakxv_lowviolence_dir"        <<  "pakxv_perfectworld_000"
+          <<"pakxv_perfectworld_001"     <<  "pakxv_perfectworld_dir";
 
+    //.bak->.vpk
+    for (int i = 0; i < files.length() ; i++) {
+        if( QFile::exists( tPath + files.at(i) + ".bak" ) )
+            QFile::rename(tPath + files.at(i) + ".bak", tPath + files.at(i) + ".vpk");
+    }
+
+    //TODO: 压缩后的操作
+    QMessageBox::warning(this, "提示", "反和谐已恢复！");
 }
 
 void MainWindow::on_solveVAC_clicked()
 {
 
+}
+
+void MainWindow::on_zipBackupdata_clicked()
+{
+    if( backupdataZipped == true ){
+        ui->backupdata->setGeometry(10, 410, 410, 100);
+        ui->zipBackupdata->setText("↑");
+        ui->getUserDataBtn->setVisible(true);
+        backupdataZipped = false;
+    }
+    else{
+        ui->backupdata->setGeometry(10, 130, 410, 380);
+        ui->zipBackupdata->setText("↓");
+        ui->getUserDataBtn->setVisible(false);
+        backupdataZipped = true;
+    }
+}
+
+void MainWindow::on_opencsgoDir_clicked()
+{
+    if( QFile(csgoPath).exists() && csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive) ){
+        QString tPath = csgoPath;
+        tPath.replace("csgo.exe", "", Qt::CaseInsensitive);
+        QDir dir;
+        QUrl url( "file:///" + tPath);
+        QDesktopServices::openUrl(url);
+    }
+    else return;
 }
