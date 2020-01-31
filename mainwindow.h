@@ -18,6 +18,8 @@
 #include <QUrl>
 #include <QClipboard>
 #include <QStandardItemModel>
+#include <Qfont>
+#include <QScreen>
 #include "lib/JlCompress.h"
 
 QT_BEGIN_NAMESPACE
@@ -105,6 +107,8 @@ private:
     void onCsgoPathChanged();
     void onLauncherPathChanged();
     void onSteamIDChanged();
-
+    //
+    int scaleUI(int spec);
+    void setupUI();
 };
 #endif // MAINWINDOW_H

@@ -1,9 +1,9 @@
 ﻿#include "mainwindow.h"
-#include "ui_mainwindow.h"
+#include "ui_MainWindow.h"
 //引入库文件，位置必须是绝对地址，有改变务必改动
 #pragma comment(lib, "E:/QtProject/CSGO Toolbox/CSGO-Toolbox/libShareCodeToURLcs.lib" )
 __declspec(dllimport) int api_Urlstring(const char* a);
-#include <QtDebug>
+
 QString steamPath = "";
 QString launcherPath = "";
 QString csgoPath = "";
@@ -20,10 +20,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    ui->labelDragArea->setAttribute(Qt::WA_TransparentForMouseEvents,true);
-    ui->checkSteamPath->setAttribute(Qt::WA_TransparentForMouseEvents,true);
-    ui->checkCsgoPath->setAttribute(Qt::WA_TransparentForMouseEvents,true);
-    ui->checkLauncherPath->setAttribute(Qt::WA_TransparentForMouseEvents,true);
+    setupUI();
     readSetting();
     getSteamPath();
     //getLauncherPath();
@@ -51,6 +48,58 @@ void MainWindow::closeEvent(QCloseEvent *e)
 {
     writeSetting();
     e->accept();
+}
+
+void MainWindow::setupUI()
+{
+    QFont font, font1, font2, font6, font60;
+    font.setFamily("微软雅黑");
+    qApp->setFont(font);
+    font1.setPixelSize(14);
+    font2.setPixelSize(17);
+    font6.setPixelSize(20);
+    font60.setPixelSize(60);
+    ui->centralwidget->setFont(font1);
+    ui->tabWidget->setFont(font2);
+    ui->TabMain->setFont(font2);
+    ui->backupSetting->setFont(font2);
+    ui->backupdata->setFont(font1);
+    ui->checkCsgoPath->setFont(font1);
+    ui->checkLauncherPath->setFont(font1);
+    ui->checkSteamID->setFont(font1);
+    ui->checkSteamPath->setFont(font1);
+    ui->getLauncherPathBtn->setFont(font2);
+    ui->getUserDataBtn->setFont(font2);
+    ui->manualBtn->setFont(font2);
+    ui->openBackupLoc->setFont(font2);
+    ui->openCNlocalcfg->setFont(font2);
+    ui->opencsgoDir->setFont(font2);
+    ui->opencsgocfg->setFont(font2);
+    ui->openlocalcfg->setFont(font2);
+    ui->userdata->setFont(font2);
+    ui->zipBackupdata->setFont(font2);
+    ui->TabSetting->setFont(font2);
+    ui->ManualSteamID->setFont(font2);
+    ui->antiHarmony->setFont(font2);
+    ui->debug->setFont(font2);
+    ui->reloadHarmony->setFont(font2);
+    ui->solveVAC->setFont(font2);
+    ui->textID->setFont(font6);
+    ui->TabDemo->setFont(font2);
+    ui->autoClip->setFont(font2);
+    ui->autoDownload->setFont(font2);
+    ui->clipURL->setFont(font2);
+    ui->dispURL->setFont(font2);
+    ui->downURL->setFont(font2);
+    //ui->dragArea->setFont(font40);
+    ui->labelDispURL->setFont(font2);
+    ui->labelDragArea->setFont(font60);
+    ui->labelSharecode->setFont(font2);
+    ui->textEdit->setFont(font6);
+    ui->labelDragArea->setAttribute(Qt::WA_TransparentForMouseEvents,true);
+    ui->checkSteamPath->setAttribute(Qt::WA_TransparentForMouseEvents,true);
+    ui->checkCsgoPath->setAttribute(Qt::WA_TransparentForMouseEvents,true);
+    ui->checkLauncherPath->setAttribute(Qt::WA_TransparentForMouseEvents,true);
 }
 
 //读取设置  QSettings在.ini文件不存在时自动生成
@@ -492,6 +541,8 @@ void MainWindow::getSteamID()
         //ui->debug->appendPlainText("检测到只有一个用户ID，已设置好SteamID！\n SteamID -< " + steamID);
     }
     else{   //显示在tabview上 用户按一次按钮完成选择        //TODO: debug
+        QFont font;
+        font.setPixelSize(14);
         short n = SteamID.length();
         ui->userdata->setColumnCount(3);
         ui->userdata->setRowCount(n);
@@ -517,6 +568,7 @@ void MainWindow::getSteamID()
             button->setProperty("id", i);
             button->setProperty("text", "选择");
             button->setProperty("status", "normal");
+            button->setFont(font);
         }
         ui->userdata->setEditTriggers(QAbstractItemView::NoEditTriggers);
     }
@@ -853,15 +905,13 @@ void MainWindow::on_backupSetting_clicked()
 
 //刷新备份backupdata域
 void MainWindow::refreshBackup()
-{   //显示在tabview上 用户按一次按钮完成选择        //TODO: debug
-    if( steamID.isEmpty() )
-        return;
+{   //显示在tabview上 用户按一次按钮完成选择
     QString tPath = "";
     if( QFile(steamPath).exists() && steamPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
         tPath = steamPath;
         tPath.replace("steam.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
     }
-    else if ( QFile(launcherPath).exists() && launcherPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
+    else if ( QFile(launcherPath).exists() && launcherPath.endsWith("launcher.exe", Qt::CaseInsensitive) ){
         tPath = launcherPath;
         tPath.replace("csgolauncher.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
     }
@@ -882,6 +932,8 @@ void MainWindow::refreshBackup()
     ui->backupdata->setColumnWidth(1,70);
     ui->backupdata->setColumnWidth(2,70);
 
+    QFont font;
+    font.setPixelSize(14);
     QStringList header;
     header <<  "备份文件" << "" << "" ;
     ui->backupdata->setHorizontalHeaderLabels(header);
@@ -896,6 +948,7 @@ void MainWindow::refreshBackup()
         DeleteButton->setProperty("id", i);
         DeleteButton->setProperty("text", "删除");
         DeleteButton->setProperty("status", "normal");
+        DeleteButton->setFont(font);
 
         QPushButton *RestoreButton = new QPushButton();
         connect(RestoreButton, SIGNAL(clicked()), this, SLOT(onRestoreBtnClicked()));
@@ -903,6 +956,7 @@ void MainWindow::refreshBackup()
         RestoreButton->setProperty("id", i);
         RestoreButton->setProperty("text", "还原");
         RestoreButton->setProperty("status", "normal");
+        DeleteButton->setFont(font);
     }
     ui->backupdata->setEditTriggers(QAbstractItemView::NoEditTriggers);
 }
@@ -1032,19 +1086,6 @@ void MainWindow::onDeleteBtnClicked()
 
 void MainWindow::on_openBackupLoc_clicked()
 {
-    if( steamID.isEmpty() )
-        return;
-    QString tPath = "";
-    if( QFile(steamPath).exists() && steamPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
-        tPath = steamPath;
-        tPath.replace("steam.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
-    }
-    else if ( QFile(launcherPath).exists() && launcherPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
-        tPath = launcherPath;
-        tPath.replace("csgolauncher.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
-    }
-    else return;
-
     QString zipPath = QCoreApplication::applicationDirPath() + "/备份/";
     QDir dir;
     //如果路径不存在则创建
@@ -1070,6 +1111,7 @@ void MainWindow::on_ManualSteamID_clicked()
         tPath.replace("Steam.exe", "userdata/" +tID, Qt::CaseInsensitive);
         if( QFile::exists( tPath ) ){
             steamID = tID;
+            onSteamIDChanged();
             ui->debug->appendPlainText("成功！");
             ui->textID->setText("");
             return;
@@ -1082,6 +1124,7 @@ void MainWindow::on_ManualSteamID_clicked()
         tPath.replace("csgolauncher.exe", "userdata/" +tID, Qt::CaseInsensitive);
         if( QFile::exists( tPath ) ){
             steamID = tID;
+            onSteamIDChanged();
             ui->debug->appendPlainText("成功！");
             ui->textID->setText("");
             return;

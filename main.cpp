@@ -1,11 +1,11 @@
 ﻿#include "mainwindow.h"
 #include <windows.h>
 
-
 const QString appName = "CSGO工具箱";
 
 int main(int argc, char *argv[])
 {
+    QGuiApplication::setAttribute(Qt::AA_Use96Dpi);
     QApplication a(argc, argv);
 
     QPixmap pixmap(":/file/img/Loading.png");
@@ -15,7 +15,6 @@ int main(int argc, char *argv[])
     a.processEvents();
 
     MainWindow w;
-    //w.stall(500);
     w.setWindowTitle(appName + " - " + APP_VERSION);
     w.show();
 
