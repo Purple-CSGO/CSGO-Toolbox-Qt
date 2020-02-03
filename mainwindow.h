@@ -18,7 +18,7 @@
 #include <QUrl>
 #include <QClipboard>
 #include <QStandardItemModel>
-#include <Qfont>
+#include <QFont>
 #include <QScreen>
 #include "lib/JlCompress.h"
 
@@ -33,7 +33,6 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    void stall(int time);
 
 private slots:
 
@@ -83,32 +82,55 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    //全局变量
+    QString steamPath;
+    QString launcherPath;
+    QString csgoPath;
+    QString steamID;
+    QString userName;
+    bool autoClip;
+    bool autoDownload;
+    bool backupdataZipped;
 
+    ///核心功能
+    //程序启动/关闭时调用
+    void setupUI();
     void readSetting();
     void writeSetting();
     void closeEvent(QCloseEvent *e);
+
+    //获取各种路径
     bool getSteamPath();
     bool getLauncherPath();
     bool getCsgoPath();
-    void solveVacIssue(QString Path);
-    QString getProcessPath(QString processName);
-    QString cmd(QString command);
-    QString cmd_dir(QString command, QString dir);
-    void sharecodeTransform();
-    bool isDigitStr(QString src);
+
+    //获取SteamID
     void getSteamID();
-    //这三个函数封装用于读取vdf
-    QString search_and_cut(QString &input, QString key);
-    QString get_until(QString input, QString end);
-    QString getValue(QString input, QString key);
-    //
+
+    ///拓展功能
+    //解决VAC验证问题
+    void solveVacIssue();
+    //分享代码转换直接下载链接
+    void sharecodeTransform();
+    //备份
     void refreshBackup();
+
+    ///类似SLOT，发生变化时调用
     void onSteamPathChanged();
     void onCsgoPathChanged();
     void onLauncherPathChanged();
     void onSteamIDChanged();
-    //
-    int scaleUI(int spec);
-    void setupUI();
+
+    ///功能封装，供其他函数调用
+    void stall(int time);
+    bool isDigitStr(QString src);
+    QString getProcessPath(QString processName);
+    QString cmd(QString command);
+    QString cmd_dir(QString command, QString dir);
+
+    //这三个函数封装用于读取 "关键字" "值"中的值 ->ID、启动项
+    QString search_and_cut(QString &input, QString key);
+    QString get_until(QString input, QString end);
+    QString getValue(QString input, QString key);
 };
 #endif // MAINWINDOW_H

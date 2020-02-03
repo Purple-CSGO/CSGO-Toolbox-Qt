@@ -1,9 +1,11 @@
 ﻿#include "mainwindow.h"
 #include "ui_MainWindow.h"
+
 //引入库文件，位置必须是绝对地址，有改变务必改动
 #pragma comment(lib, "E:/QtProject/CSGO Toolbox/CSGO-Toolbox/libShareCodeToURLcs.lib" )
 __declspec(dllimport) int api_Urlstring(const char* a);
 
+//全局变量
 QString steamPath = "";
 QString launcherPath = "";
 QString csgoPath = "";
@@ -36,20 +38,15 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-//停顿time(ms)时间
-void MainWindow::stall(int time){
-    QTime dieTime = QTime::currentTime().addMSecs(time);
-    while( QTime::currentTime() < dieTime )
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
-}
+/**
+  * 程序的核心模块，是完成其他实际功能的基础
+  * 1. 程序启动/关闭时调用
+  * 2. 获取各种路径
+  * 3. 获取SteamID
+  */
 
-//关闭主界面时保存设置
-void MainWindow::closeEvent(QCloseEvent *e)
-{
-    writeSetting();
-    e->accept();
-}
-
+/*  1. 程序启动/关闭时调用   */
+//设置UI样式
 void MainWindow::setupUI()
 {
     QFont font, font1, font2, font6, font60;
@@ -102,7 +99,7 @@ void MainWindow::setupUI()
     ui->checkLauncherPath->setAttribute(Qt::WA_TransparentForMouseEvents,true);
 }
 
-//读取设置  QSettings在.ini文件不存在时自动生成
+//读取设置
 void MainWindow::readSetting()
 {
     QSettings *iniRead = new QSettings("./config.ini", QSettings::IniFormat);
@@ -185,6 +182,14 @@ void MainWindow::writeSetting()
     delete IniWrite;
 }
 
+//关闭主界面时保存设置
+void MainWindow::closeEvent(QCloseEvent *e)
+{
+    writeSetting();
+    e->accept();
+}
+
+/*  2. 获取各种路径  */
 //获取Steam路径
 bool MainWindow::getSteamPath()
 {
@@ -350,138 +355,38 @@ bool MainWindow::getCsgoPath()
     }
 }
 
-//获得进程路径，对cmd函数进行封装并调用wmic指令
-QString MainWindow::getProcessPath(QString processName)
-{   //processid,name
-    processName = "wmic process where name='" + processName + "' get executablepath";
-    processName = cmd(processName);
-    processName = processName.replace("ExecutablePath", "");
-    processName = processName.replace("\r", "");
-    processName = processName.replace("\n", "");
-    processName = processName.simplified();
-
-    return processName;
-}
-
-//调用CMD控制台指令并返回结果，正确执行时返回标准输出通道的内容，执行出错时返回错误通道的内容
-QString MainWindow::cmd(QString command)
+//手动设置路径
+void MainWindow::on_manualBtn_clicked()
 {
-    QProcess p;
-    QString temp;
-    p.start(command);
-    p.waitForStarted();
-    p.closeWriteChannel();  //关闭写通道 ，解决未响应问题
-    p.waitForFinished();
-    temp = QString::fromLocal8Bit(p.readAllStandardOutput());
-    temp.replace("\r", "");
-    temp.replace("\n", "");
-    if( QString(temp).isEmpty() )
-        temp = QString::fromLocal8Bit(p.readAllStandardError());
-    p.close();
-    return temp;
+    QString tPath = "";
+    if( QString(steamPath).isEmpty() ){
+        tPath = QFileDialog::getOpenFileName(this, "选择steam.exe的位置", tPath, "steam.exe");
+        if( !QFile::exists( tPath ) || !tPath.endsWith("steam.exe", Qt::CaseInsensitive ) ){
+            return;
+        }
+        steamPath = tPath;
+    }
+    if( QString(csgoPath).isEmpty() ){
+        tPath = QFileDialog::getOpenFileName(this, "选择csgo.exe的位置", tPath, "csgo.exe");
+        if( !QFile::exists( tPath ) || !tPath.endsWith("csgo.exe", Qt::CaseInsensitive ) ){
+            return;
+        }
+        csgoPath = tPath;
+    }
+    if( QString(launcherPath).isEmpty() ){
+        tPath = QFileDialog::getOpenFileName(this, "选择国服启动器csgolauncher.exe的位置", tPath, "csgolauncher.exe");
+        if( !QFile::exists( tPath ) || !tPath.endsWith("csgolauncher.exe", Qt::CaseInsensitive ) ){
+            return;
+        }
+        launcherPath = tPath;
+    }
+    //已有路径的处理 TODO: 路径设置好后直接enabled 0
+    if( !QString(csgoPath).isEmpty() && !QString(steamPath).isEmpty() && !QString(launcherPath).isEmpty() ){
+        QMessageBox::warning(this, "提示", "路径已有，无需手动选择！");
+    }
 }
 
-//调用CMD指令 并设定工作路径 TODO: 测试是否成功设置工作路径
-QString MainWindow::cmd_dir(QString command, QString dir)
-{
-    QProcess p;
-    QString temp;
-    p.setWorkingDirectory(dir);
-    p.start(command);
-    p.waitForStarted();
-    p.closeWriteChannel();  //关闭写通道 ，解决未响应问题
-    p.waitForFinished();
-    temp = QString::fromLocal8Bit(p.readAllStandardOutput());
-    temp.replace("\r", "");
-    temp.replace("\n", "");
-    //temp
-    if( QString(temp).isEmpty() )
-        temp = QString::fromLocal8Bit(p.readAllStandardError());
-    p.close();
-    return temp;
-}
-
-//修复VAC验证问题 TODO:
-void MainWindow::solveVacIssue(QString Path)
-{
-    /*
-思路：
-    1. 关闭steam或者国服启动器
-    2. 开启 Network Connections
-        开启 Remote Access Connection Manager
-        开启 Telephony
-        开启 Windows Firewall
-   3. 恢复 Data Execution Prevention 启动设置为默认值
-   4. 获取steam或国服启动器目录（Done）
-   5. 重装Steam Services
-            steamservice  /uninstall
-            steamservice  /install
-        # 等待出现"Add firewall exception failed for steamservice.exe"
-   6. 启动Steam Services服务
-            start "Steam Client Service"
-   7. 其他诸如设置快捷方式 打开网吧模式
-            ? start /high steam -console -cafeapplaunch -forceservice
-
-    //1.
-    cmd("taskkill /F /IM Steam.exe");
-    cmd("taskkill /F /IM csgolauncher.exe");
-    //2.
-    cmd("sc config Netman start= AUTO");
-    cmd("sc start Netman");
-    cmd("sc config RasMan start= AUTO");
-    cmd("sc start RasMan");
-    cmd("sc config TapiSrv start= AUTO");
-    cmd("sc start TapiSrv");
-    cmd("sc config MpsSvc start= AUTO");
-    cmd("sc start MpsSvc");
-    cmd("netsh advfirewall set allprofiles state on");
-    //3.
-    cmd("bcdedit /deletevalue nointegritychecks");
-    cmd("bcdedit /deletevalue loadoptions");
-    cmd("bcdedit /debug off");
-    cmd("bcdedit /deletevalue nx");
-    //4.
-    if( !QFile::exists(Path) )
-        return;
-    //5.
-    steamservice  /uninstall
-    ping -n 3 127.0.0.1>nul
-    steamservice  /install
-*/
-    //debug测试
-    ui->debug->appendPlainText( cmd("cd") );
-    ui->debug->appendPlainText( cmd("cd " + steamPath) );
-    ui->debug->appendPlainText( cmd("dir") );
-
-
-}
-
-//剪切掉相应的部分 aaakeybbb -> bbb
-QString MainWindow::search_and_cut(QString &input, QString key)
-{
-    qint32 i = input.indexOf(key, Qt::CaseInsensitive);
-    if( i >= 0 )
-        input.remove(0, i + key.length() );
-
-    return "";
-}
-
-//把第一次出现end之前的串提取出来  xxxendyyy -> xxx
-QString MainWindow::get_until(QString input, QString end)
-{
-    int i = input.indexOf(end, Qt::CaseInsensitive);
-    return input.left( i );
-}
-
-//封装search_and_cut()和get_until()实现从字符串中提取 "key"  "data"格式的data串
-QString MainWindow::getValue(QString input, QString key)
-{
-    key = "\"" + key + "\"";
-    search_and_cut(input, key);
-    search_and_cut(input, "\"");
-    return get_until(input, "\"");
-}
-
+/*  3. 获取SteamID  */
 //获取SteamID，一般9位数字 TODO: 错误处理 &
 void MainWindow::getSteamID()
 {
@@ -574,30 +479,26 @@ void MainWindow::getSteamID()
     }
 }
 
-//选择按钮按下时切换SteamID
-void MainWindow::onTableBtnClicked()
-{
-    QPushButton *senderObj=qobject_cast<QPushButton*>(sender());
-    if(senderObj == nullptr){
-        return;
-    }
-    QModelIndex idx = ui->userdata->indexAt(QPoint(senderObj->frameGeometry().x(),senderObj->frameGeometry().y()));
-    int row = idx.row();
-    steamID = ui->userdata->item(row, 0)->text();
-    userName = ui->userdata->item(row, 1)->text();
-    //ui->debug->setPlainText( "SteamID <- " + steamID );
-    onSteamIDChanged();
-}
+/**
+ *  拓展功能，基于核心模块和封装好的功能模块，完成具体的功能
+ *  包括：
+ *  1. 转换DEMO分享代码 获得真实下载链接
+ *  2. 修复VAC验证问题
+ *  3. 备份和还原设置（个人cfg文件夹）
+ *  4. 国服反和谐和反和谐恢复
+ *  5. 打开各种cfg文件夹
+ */
 
+/*------------------------------------------------------------------------------------*/
 // 转换DEMO分享代码 获得真实下载链接  注意这里不可对dragArea赋非空值否则会死循环
 void MainWindow::sharecodeTransform()
-{   //字典去掉了大写I 小写G 小写L 数字1和0
-    const QString DICTIONARY = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefhijkmnopqrstuvwxyz23456789";
+{
     const QString ShareCodePattern = "^CSGO(-?[\\w]{5}){5}$";
     QRegExp reg( ShareCodePattern );     //正则表达式
 
     //显示提示
     ui->dispURL->setText("正在转换链接。。。");
+
     //1. 读入分享代码（参照之前的项目）
     QString ShareCode = ui->dragArea->toPlainText();
     if( !QString(ShareCode).isEmpty() )
@@ -661,90 +562,6 @@ void MainWindow::sharecodeTransform()
         on_clipURL_clicked();
 }
 
-//判断一个字符串是否为纯数字
-bool MainWindow::isDigitStr(QString src)
-{
-    QByteArray ba = src.toLatin1();
-    const char *s = ba.data();
-    bool bret = true;
-    while(*s)
-    {
-        if(*s>='0' && *s<='9'){}
-        else {
-            bret = false;
-            break;
-        }
-        s++;
-    }
-    return bret;
-}
-
-//拖拽区域文字发生改变时调用 注意这里不可对dragArea赋非空值否则会死循环
-void MainWindow::on_dragArea_textChanged()
-{
-    sharecodeTransform();
-}
-
-/*
-    //自定义启动项指令 "F:\CSGO国服\csgolauncher.exe" -silent
-    // 计算机\HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Valve\Steam\NSIS  Path
-    //国服 计算机\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run
-    //计算机\HKEY_CURRENT_USER\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Store
-
-    //获得计算机名
-    //QString machineName = QHostInfo::localHostName();
-    //ui->debug->setPlainText( machineName );
-    //ui->debug->setPlainText( QCoreApplication::applicationDirPath() );    //exe所在路径
-    //ui->debug->setPlainText( QDir::currentPath() ); //项目路径 当前路径
-
-    if(QFile::exists(steamPath)) ;   //拖拽可能用到的代码
-      if( tPath.endsWith("windeployqt.exe",Qt::CaseSensitive) ){
-        steamPath.replace("file:///","");        //去除拖拽产生的前缀
-
-        if( !QString(tPath).isEmpty() )
-
-#include <QFile>
-
-void ReadLine()
-{
-
-    QFile file("要读的文件路径");
-    if (file.open(QIODevice::ReadOnly | QIODevice::Text))
-    {
-        while (!file.atEnd())
-        {
-            QByteArray line = file.readLine();
-            QString str(line);
-            qDebug() << str;
-            displayString << str;
-        }
-        file.close();
-
-    }
-}
-
-void WriteLine()
-{
-
-    QFile file("要写的文件路径");
-    if (file.open(QIODevice::ReadWrite | QIODevice::Text))
-    {
-        QTextStream stream(&file);
-        stream.seek(file.size());
-        for (auto& i : displayString)
-        {
-            QString qs;
-            qs.append("Content:");
-            qs.append(i);
-            qs.remove("\n");
-            stream << qs << "\n";
-        }
-        file.close();
-    }
-}
-
-*/
-
 //开始下载DEMO
 void MainWindow::on_downURL_clicked()
 {
@@ -787,6 +604,208 @@ void MainWindow::on_autoClip_stateChanged(int arg1)
         autoClip = false;
 }
 
+/*------------------------------------------------------------------------------------*/
+//修复VAC验证问题 TODO:
+void MainWindow::solveVacIssue()
+{
+    /*
+思路：
+    1. 关闭steam或者国服启动器
+    2. 开启 Network Connections
+        开启 Remote Access Connection Manager
+        开启 Telephony
+        开启 Windows Firewall
+   3. 恢复 Data Execution Prevention 启动设置为默认值
+   4. 获取steam或国服启动器目录（Done）
+   5. 重装Steam Services
+            steamservice  /uninstall
+            steamservice  /install
+        # 等待出现"Add firewall exception failed for steamservice.exe"
+   6. 启动Steam Services服务
+            start "Steam Client Service"
+   7. 其他诸如设置快捷方式 打开网吧模式
+            ? start /high steam -console -cafeapplaunch -forceservice
+
+    //1.
+    cmd("taskkill /F /IM Steam.exe");
+    cmd("taskkill /F /IM csgolauncher.exe");
+    //2.
+    cmd("sc config Netman start= AUTO");
+    cmd("sc start Netman");
+    cmd("sc config RasMan start= AUTO");
+    cmd("sc start RasMan");
+    cmd("sc config TapiSrv start= AUTO");
+    cmd("sc start TapiSrv");
+    cmd("sc config MpsSvc start= AUTO");
+    cmd("sc start MpsSvc");
+    cmd("netsh advfirewall set allprofiles state on");
+    //3.
+    cmd("bcdedit /deletevalue nointegritychecks");
+    cmd("bcdedit /deletevalue loadoptions");
+    cmd("bcdedit /debug off");
+    cmd("bcdedit /deletevalue nx");
+    //4.
+    if( !QFile::exists(Path) )
+        return;
+    //5.
+    steamservice  /uninstall
+    ping -n 3 127.0.0.1>nul
+    steamservice  /install
+*/
+    //debug测试
+    ui->debug->appendPlainText( cmd("cd") );
+    ui->debug->appendPlainText( cmd("cd " + steamPath) );
+    ui->debug->appendPlainText( cmd("dir") );
+
+
+}
+
+//信号槽
+void MainWindow::on_solveVAC_clicked()
+{
+    solveVacIssue();
+}
+
+/*------------------------------------------------------------------------------------*/
+//备份设置 TODO:
+void MainWindow::on_backupSetting_clicked()
+{
+    if( steamID.isEmpty() )
+        return;
+    QString tPath = "";
+    if( QFile(steamPath).exists() && steamPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
+        tPath = steamPath;
+        tPath.replace("steam.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
+    }
+    else if ( QFile(launcherPath).exists() && launcherPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
+        tPath = launcherPath;
+        tPath.replace("csgolauncher.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
+    }
+    else return;
+
+    QDateTime current_date_time = QDateTime::currentDateTime();
+    QString zipName = current_date_time.toString("yyyy-MM-dd_hh-mm-ss_%1").arg(userName.left(6)) + ".zip";
+    QString zipPath = QCoreApplication::applicationDirPath() + "/备份/";
+    QDir dir;
+    //如果路径不存在则创建
+    if (!dir.exists(zipPath))   dir.mkpath(zipPath);
+    if (!dir.exists(tPath))   dir.mkpath(tPath);
+    //压缩
+    JlCompress::compressDir(zipPath + zipName, tPath);
+    //TODO: 压缩后的操作
+    QMessageBox::warning(this, "提示", "备份成功！");
+    refreshBackup();
+}
+
+//刷新备份backupdata域
+void MainWindow::refreshBackup()
+{   //显示在tablewidget上 用户按一次按钮完成选择
+    QString tPath = "";
+    if( QFile(steamPath).exists() && steamPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
+        tPath = steamPath;
+        tPath.replace("steam.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
+    }
+    else if ( QFile(launcherPath).exists() && launcherPath.endsWith("launcher.exe", Qt::CaseInsensitive) ){
+        tPath = launcherPath;
+        tPath.replace("csgolauncher.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
+    }
+    else return;
+
+    QString zipPath = QCoreApplication::applicationDirPath() + "/备份/";
+    QDir dir(zipPath);
+    //如果路径不存在则创建
+    if (!dir.exists(zipPath))   dir.mkpath(zipPath);
+
+    QStringList nameFilters;
+    nameFilters << "*.zip";
+    QStringList files = dir.entryList(nameFilters, QDir::Files|QDir::Readable, QDir::Name);
+    short n = files.length();
+    ui->backupdata->setColumnCount(3);
+    ui->backupdata->setRowCount(n);
+    ui->backupdata->setColumnWidth(0,268);
+    ui->backupdata->setColumnWidth(1,70);
+    ui->backupdata->setColumnWidth(2,70);
+
+    QFont font;
+    font.setPixelSize(14);
+    QStringList header;
+    header <<  "备份文件" << "" << "" ;
+    ui->backupdata->setHorizontalHeaderLabels(header);
+
+    for(short i = 0; i < n; i++){
+        ui->backupdata->setRowHeight(i, 35);
+        ui->backupdata->setItem(i, 0, new QTableWidgetItem(files.at( n - i - 1 )));
+
+        QPushButton *DeleteButton = new QPushButton();
+        connect(DeleteButton, SIGNAL(clicked()), this, SLOT(onDeleteBtnClicked()));
+        ui->backupdata->setCellWidget(i, 1, DeleteButton);
+        DeleteButton->setProperty("id", i);
+        DeleteButton->setProperty("text", "删除");
+        DeleteButton->setProperty("status", "normal");
+        DeleteButton->setFont(font);
+
+        QPushButton *RestoreButton = new QPushButton();
+        connect(RestoreButton, SIGNAL(clicked()), this, SLOT(onRestoreBtnClicked()));
+        ui->backupdata->setCellWidget(i, 2, RestoreButton);
+        RestoreButton->setProperty("id", i);
+        RestoreButton->setProperty("text", "还原");
+        RestoreButton->setProperty("status", "normal");
+        DeleteButton->setFont(font);
+    }
+    ui->backupdata->setEditTriggers(QAbstractItemView::NoEditTriggers);
+}
+
+/*------------------------------------------------------------------------------------*/
+//国服反和谐
+void MainWindow::on_antiHarmony_clicked()
+{
+    QStringList files;
+    QString tPath = "";
+    if( QFile(csgoPath).exists() && csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive) ){
+        tPath = csgoPath;
+        tPath.replace("csgo.exe", "csgo/", Qt::CaseInsensitive);
+    }
+    else return;
+    files << "pakxv_audiochinese_000" << "pakxv_audiochinese_001" << "pakxv_audiochinese_002"
+          << "pakxv_audiochinese_003"   << "pakxv_audiochinese_004" <<  "pakxv_audiochinese_dir"
+          << "pakxv_lowviolence_000"      << "pakxv_lowviolence_dir"        <<  "pakxv_perfectworld_000"
+          <<"pakxv_perfectworld_001"     <<  "pakxv_perfectworld_dir";
+    //.vpk->.bak
+    for (int i = 0; i < files.length() ; i++) {
+        if( QFile::exists( tPath + files.at(i) + ".vpk" ) )
+            QFile::rename(tPath + files.at(i) + ".vpk", tPath + files.at(i) + ".bak");
+    }
+
+    //TODO: 压缩后的操作
+    QMessageBox::warning(this, "提示", "反和谐成功！");
+}
+
+//恢复反和谐
+void MainWindow::on_reloadHarmony_clicked()
+{
+    QStringList files;
+    QString tPath = "";
+    if( QFile(csgoPath).exists() && csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive) ){
+        tPath = csgoPath;
+        tPath.replace("csgo.exe", "csgo/", Qt::CaseInsensitive);
+    }
+    else return;
+    files << "pakxv_audiochinese_000" << "pakxv_audiochinese_001" << "pakxv_audiochinese_002"
+          << "pakxv_audiochinese_003"   << "pakxv_audiochinese_004" <<  "pakxv_audiochinese_dir"
+          << "pakxv_lowviolence_000"      << "pakxv_lowviolence_dir"        <<  "pakxv_perfectworld_000"
+          <<"pakxv_perfectworld_001"     <<  "pakxv_perfectworld_dir";
+
+    //.bak->.vpk
+    for (int i = 0; i < files.length() ; i++) {
+        if( QFile::exists( tPath + files.at(i) + ".bak" ) )
+            QFile::rename(tPath + files.at(i) + ".bak", tPath + files.at(i) + ".vpk");
+    }
+
+    //TODO: 压缩后的操作
+    QMessageBox::warning(this, "提示", "反和谐已恢复！");
+}
+
+/*------------------------------------------------------------------------------------*/
 //打开csgo/cfg文件夹
 void MainWindow::on_opencsgocfg_clicked()
 {
@@ -841,124 +860,141 @@ void MainWindow::on_openCNlocalcfg_clicked()
     QDesktopServices::openUrl(url);
 }
 
-//手动设置路径
-void MainWindow::on_manualBtn_clicked()
-{
-    QString tPath = "";
-    if( QString(steamPath).isEmpty() ){
-        tPath = QFileDialog::getOpenFileName(this, "选择steam.exe的位置", tPath, "steam.exe");
-        if( !QFile::exists( tPath ) || !tPath.endsWith("steam.exe", Qt::CaseInsensitive ) ){
-            return;
-        }
-        steamPath = tPath;
-    }
-    if( QString(csgoPath).isEmpty() ){
-        tPath = QFileDialog::getOpenFileName(this, "选择csgo.exe的位置", tPath, "csgo.exe");
-        if( !QFile::exists( tPath ) || !tPath.endsWith("csgo.exe", Qt::CaseInsensitive ) ){
-            return;
-        }
-        csgoPath = tPath;
-    }
-    if( QString(launcherPath).isEmpty() ){
-        tPath = QFileDialog::getOpenFileName(this, "选择国服启动器csgolauncher.exe的位置", tPath, "csgolauncher.exe");
-        if( !QFile::exists( tPath ) || !tPath.endsWith("csgolauncher.exe", Qt::CaseInsensitive ) ){
-            return;
-        }
-        launcherPath = tPath;
-    }
-    //已有路径的处理 TODO: 路径设置好后直接enabled 0
-    if( !QString(csgoPath).isEmpty() && !QString(steamPath).isEmpty() && !QString(launcherPath).isEmpty() ){
-        QMessageBox::warning(this, "提示", "路径已有，无需手动选择！");
-    }
+/*------------------------------------------------------------------------------------*/
+
+/**
+ *  功能模块封装，给其他功能调用，减少代码冗余
+ */
+
+//停顿time(ms)时间
+void MainWindow::stall(int time){
+    QTime dieTime = QTime::currentTime().addMSecs(time);
+    while( QTime::currentTime() < dieTime )
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 
-/*---------------------------------------------------------------------------------------------------*/
-//备份设置 TODO:
-void MainWindow::on_backupSetting_clicked()
+//判断一个字符串是否为纯数字
+bool MainWindow::isDigitStr(QString src)
 {
-    if( steamID.isEmpty() )
+    QByteArray ba = src.toLatin1();
+    const char *s = ba.data();
+    bool bret = true;
+    while(*s)
+    {
+        if(*s>='0' && *s<='9'){}
+        else {
+            bret = false;
+            break;
+        }
+        s++;
+    }
+    return bret;
+}
+
+/*------------------------------------------------------------------------------------*/
+//获得进程路径，对cmd函数进行封装并调用wmic指令
+QString MainWindow::getProcessPath(QString processName)
+{   //processid,name
+    processName = "wmic process where name='" + processName + "' get executablepath";
+    processName = cmd(processName);
+    processName = processName.replace("ExecutablePath", "");
+    processName = processName.replace("\r", "");
+    processName = processName.replace("\n", "");
+    processName = processName.simplified();
+
+    return processName;
+}
+
+//调用CMD控制台指令并返回结果，正确执行时返回标准输出通道的内容，执行出错时返回错误通道的内容
+QString MainWindow::cmd(QString command)
+{
+    QProcess p;
+    QString temp;
+    p.start(command);
+    p.waitForStarted();
+    p.closeWriteChannel();  //关闭写通道 ，解决未响应问题
+    p.waitForFinished();
+    temp = QString::fromLocal8Bit(p.readAllStandardOutput());
+    temp.replace("\r", "");
+    temp.replace("\n", "");
+    if( QString(temp).isEmpty() )
+        temp = QString::fromLocal8Bit(p.readAllStandardError());
+    p.close();
+    return temp;
+}
+
+//调用CMD指令 并设定工作路径 TODO: 测试是否成功设置工作路径
+QString MainWindow::cmd_dir(QString command, QString dir)
+{
+    QProcess p;
+    QString temp;
+    p.setWorkingDirectory(dir);
+    p.start(command);
+    p.waitForStarted();
+    p.closeWriteChannel();  //关闭写通道 ，解决未响应问题
+    p.waitForFinished();
+    temp = QString::fromLocal8Bit(p.readAllStandardOutput());
+    temp.replace("\r", "");
+    temp.replace("\n", "");
+    //temp
+    if( QString(temp).isEmpty() )
+        temp = QString::fromLocal8Bit(p.readAllStandardError());
+    p.close();
+    return temp;
+}
+
+/*------------------------------------------------------------------------------------*/
+//剪切掉相应的部分 aaakeybbb -> bbb
+QString MainWindow::search_and_cut(QString &input, QString key)
+{
+    qint32 i = input.indexOf(key, Qt::CaseInsensitive);
+    if( i >= 0 )
+        input.remove(0, i + key.length() );
+
+    return "";
+}
+
+//把第一次出现end之前的串提取出来  xxxendyyy -> xxx
+QString MainWindow::get_until(QString input, QString end)
+{
+    int i = input.indexOf(end, Qt::CaseInsensitive);
+    return input.left( i );
+}
+
+//封装search_and_cut()和get_until()实现从字符串中提取 "key"  "data"格式的data串
+QString MainWindow::getValue(QString input, QString key)
+{
+    key = "\"" + key + "\"";
+    search_and_cut(input, key);
+    search_and_cut(input, "\"");
+    return get_until(input, "\"");
+}
+
+/*------------------------------------------------------------------------------------*/
+
+/**
+ *  SLOT槽函数和类槽函数（自定义onxxxclicked()）
+ */
+
+//选择按钮按下时切换SteamID
+void MainWindow::onTableBtnClicked()
+{
+    QPushButton *senderObj=qobject_cast<QPushButton*>(sender());
+    if(senderObj == nullptr){
         return;
-    QString tPath = "";
-    if( QFile(steamPath).exists() && steamPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
-        tPath = steamPath;
-        tPath.replace("steam.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
     }
-    else if ( QFile(launcherPath).exists() && launcherPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
-        tPath = launcherPath;
-        tPath.replace("csgolauncher.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
-    }
-    else return;
-
-    QDateTime current_date_time = QDateTime::currentDateTime();
-    QString zipName = current_date_time.toString("yyyy-MM-dd_hh-mm-ss_%1").arg(userName.left(6)) + ".zip";
-    QString zipPath = QCoreApplication::applicationDirPath() + "/备份/";
-    QDir dir;
-    //如果路径不存在则创建
-    if (!dir.exists(zipPath))   dir.mkpath(zipPath);
-    if (!dir.exists(tPath))   dir.mkpath(tPath);
-    //压缩
-    JlCompress::compressDir(zipPath + zipName, tPath);
-    //TODO: 压缩后的操作
-    QMessageBox::warning(this, "提示", "备份成功！");
-    refreshBackup();
+    QModelIndex idx = ui->userdata->indexAt(QPoint(senderObj->frameGeometry().x(),senderObj->frameGeometry().y()));
+    int row = idx.row();
+    steamID = ui->userdata->item(row, 0)->text();
+    userName = ui->userdata->item(row, 1)->text();
+    //ui->debug->setPlainText( "SteamID <- " + steamID );
+    onSteamIDChanged();
 }
 
-//刷新备份backupdata域
-void MainWindow::refreshBackup()
-{   //显示在tabview上 用户按一次按钮完成选择
-    QString tPath = "";
-    if( QFile(steamPath).exists() && steamPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
-        tPath = steamPath;
-        tPath.replace("steam.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
-    }
-    else if ( QFile(launcherPath).exists() && launcherPath.endsWith("launcher.exe", Qt::CaseInsensitive) ){
-        tPath = launcherPath;
-        tPath.replace("csgolauncher.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
-    }
-    else return;
-
-    QString zipPath = QCoreApplication::applicationDirPath() + "/备份/";
-    QDir dir(zipPath);
-    //如果路径不存在则创建
-    if (!dir.exists(zipPath))   dir.mkpath(zipPath);
-
-    QStringList nameFilters;
-    nameFilters << "*.zip";
-    QStringList files = dir.entryList(nameFilters, QDir::Files|QDir::Readable, QDir::Name);
-    short n = files.length();
-    ui->backupdata->setColumnCount(3);
-    ui->backupdata->setRowCount(n);
-    ui->backupdata->setColumnWidth(0,268);
-    ui->backupdata->setColumnWidth(1,70);
-    ui->backupdata->setColumnWidth(2,70);
-
-    QFont font;
-    font.setPixelSize(14);
-    QStringList header;
-    header <<  "备份文件" << "" << "" ;
-    ui->backupdata->setHorizontalHeaderLabels(header);
-
-    for(short i = 0; i < n; i++){
-        ui->backupdata->setRowHeight(i, 35);
-        ui->backupdata->setItem(i, 0, new QTableWidgetItem(files.at( n - i - 1 )));
-
-        QPushButton *DeleteButton = new QPushButton();
-        connect(DeleteButton, SIGNAL(clicked()), this, SLOT(onDeleteBtnClicked()));
-        ui->backupdata->setCellWidget(i, 1, DeleteButton);
-        DeleteButton->setProperty("id", i);
-        DeleteButton->setProperty("text", "删除");
-        DeleteButton->setProperty("status", "normal");
-        DeleteButton->setFont(font);
-
-        QPushButton *RestoreButton = new QPushButton();
-        connect(RestoreButton, SIGNAL(clicked()), this, SLOT(onRestoreBtnClicked()));
-        ui->backupdata->setCellWidget(i, 2, RestoreButton);
-        RestoreButton->setProperty("id", i);
-        RestoreButton->setProperty("text", "还原");
-        RestoreButton->setProperty("status", "normal");
-        DeleteButton->setFont(font);
-    }
-    ui->backupdata->setEditTriggers(QAbstractItemView::NoEditTriggers);
+//拖拽区域文字发生改变时调用 注意这里不可对dragArea赋非空值否则会死循环
+void MainWindow::on_dragArea_textChanged()
+{
+    sharecodeTransform();
 }
 
 void MainWindow::onSteamPathChanged()
@@ -1147,60 +1183,6 @@ void MainWindow::on_getLauncherPathBtn_clicked()
     getLauncherPath();
 }
 
-//国服反和谐
-void MainWindow::on_antiHarmony_clicked()
-{
-    QStringList files;
-    QString tPath = "";
-    if( QFile(csgoPath).exists() && csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive) ){
-        tPath = csgoPath;
-        tPath.replace("csgo.exe", "csgo/", Qt::CaseInsensitive);
-    }
-    else return;
-    files << "pakxv_audiochinese_000" << "pakxv_audiochinese_001" << "pakxv_audiochinese_002"
-          << "pakxv_audiochinese_003"   << "pakxv_audiochinese_004" <<  "pakxv_audiochinese_dir"
-          << "pakxv_lowviolence_000"      << "pakxv_lowviolence_dir"        <<  "pakxv_perfectworld_000"
-          <<"pakxv_perfectworld_001"     <<  "pakxv_perfectworld_dir";
-    //.vpk->.bak
-    for (int i = 0; i < files.length() ; i++) {
-        if( QFile::exists( tPath + files.at(i) + ".vpk" ) )
-            QFile::rename(tPath + files.at(i) + ".vpk", tPath + files.at(i) + ".bak");
-    }
-
-    //TODO: 压缩后的操作
-    QMessageBox::warning(this, "提示", "反和谐成功！");
-}
-
-//恢复反和谐
-void MainWindow::on_reloadHarmony_clicked()
-{
-    QStringList files;
-    QString tPath = "";
-    if( QFile(csgoPath).exists() && csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive) ){
-        tPath = csgoPath;
-        tPath.replace("csgo.exe", "csgo/", Qt::CaseInsensitive);
-    }
-    else return;
-    files << "pakxv_audiochinese_000" << "pakxv_audiochinese_001" << "pakxv_audiochinese_002"
-          << "pakxv_audiochinese_003"   << "pakxv_audiochinese_004" <<  "pakxv_audiochinese_dir"
-          << "pakxv_lowviolence_000"      << "pakxv_lowviolence_dir"        <<  "pakxv_perfectworld_000"
-          <<"pakxv_perfectworld_001"     <<  "pakxv_perfectworld_dir";
-
-    //.bak->.vpk
-    for (int i = 0; i < files.length() ; i++) {
-        if( QFile::exists( tPath + files.at(i) + ".bak" ) )
-            QFile::rename(tPath + files.at(i) + ".bak", tPath + files.at(i) + ".vpk");
-    }
-
-    //TODO: 压缩后的操作
-    QMessageBox::warning(this, "提示", "反和谐已恢复！");
-}
-
-void MainWindow::on_solveVAC_clicked()
-{
-
-}
-
 void MainWindow::on_zipBackupdata_clicked()
 {
     if( backupdataZipped == true ){
@@ -1228,3 +1210,63 @@ void MainWindow::on_opencsgoDir_clicked()
     }
     else return;
 }
+
+/*
+    //自定义启动项指令 "F:\CSGO国服\csgolauncher.exe" -silent
+    // 计算机\HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Valve\Steam\NSIS  Path
+    //国服 计算机\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run
+    //计算机\HKEY_CURRENT_USER\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Store
+
+    //获得计算机名
+    //QString machineName = QHostInfo::localHostName();
+    //ui->debug->setPlainText( machineName );
+    //ui->debug->setPlainText( QCoreApplication::applicationDirPath() );    //exe所在路径
+    //ui->debug->setPlainText( QDir::currentPath() ); //项目路径 当前路径
+
+    if(QFile::exists(steamPath)) ;   //拖拽可能用到的代码
+      if( tPath.endsWith("windeployqt.exe",Qt::CaseSensitive) ){
+        steamPath.replace("file:///","");        //去除拖拽产生的前缀
+
+        if( !QString(tPath).isEmpty() )
+
+#include <QFile>
+
+void ReadLine()
+{
+
+    QFile file("要读的文件路径");
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        while (!file.atEnd())
+        {
+            QByteArray line = file.readLine();
+            QString str(line);
+            qDebug() << str;
+            displayString << str;
+        }
+        file.close();
+
+    }
+}
+
+void WriteLine()
+{
+
+    QFile file("要写的文件路径");
+    if (file.open(QIODevice::ReadWrite | QIODevice::Text))
+    {
+        QTextStream stream(&file);
+        stream.seek(file.size());
+        for (auto& i : displayString)
+        {
+            QString qs;
+            qs.append("Content:");
+            qs.append(i);
+            qs.remove("\n");
+            stream << qs << "\n";
+        }
+        file.close();
+    }
+}
+
+*/
