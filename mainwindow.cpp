@@ -28,6 +28,7 @@ MainWindow::MainWindow(QWidget *parent)
     getCsgoPath();
     getSteamID();
     refreshBackup();
+    //ui->debug->setPlainText(QCoreApplication::applicationDirPath() + "/SolveVAC.bat");
 }
 
 MainWindow::~MainWindow()
@@ -396,7 +397,7 @@ void MainWindow::on_manualBtn_clicked()
 void MainWindow::on_manualCsgoBtn_clicked()
 {
     QString tPath = "";
-     tPath = QFileDialog::getOpenFileName(this, "选择csgo.exe的位置", tPath, "csgo.exe");
+    tPath = QFileDialog::getOpenFileName(this, "选择csgo.exe的位置", tPath, "csgo.exe");
     if( !isCsgoExisted(tPath) ){
         return;
     }
@@ -694,68 +695,30 @@ void MainWindow::on_dragArea_textChanged()
 //修复VAC验证问题 TODO:
 void MainWindow::solveVacIssue()
 {
-
-    //思路：
-    //    1. 关闭steam或者国服启动器
-    //    2. 开启 Network Connections
-    //        开启 Remote Access Connection Manager
-    //        开启 Telephony
-    //        开启 Windows Firewall
-    //   3. 恢复 Data Execution Prevention 启动设置为默认值
-    //   4. 获取steam或国服启动器目录（Done）
-    //   5. 重装Steam Services
-    //            steamservice  /uninstall
-    //            steamservice  /install
-    //        # 等待出现"Add firewall exception failed for steamservice.exe"
-    //   6. 启动Steam Services服务
-    //            start "Steam Client Service"
-    //   7. 其他诸如设置快捷方式 打开网吧模式
-    //            ? start /high steam -console -cafeapplaunch -forceservice
-
-    //1.
-    cmd("taskkill /f /t /im csgo.exe");
-    cmd("taskkill /f /t /im steam.exe");
-    cmd("taskkill /f /t /im csgolauncher.exe");
-    do{
-        stall(100);
-    }while( getProcessPath("csgo.exe").endsWith("exe") || getProcessPath("steam.exe").endsWith("exe") ||getProcessPath("csgolauncher.exe").endsWith("exe") );
-    //2.
-    cmd("sc config Netman start= AUTO");
-    cmd("sc start Netman");
-    cmd("sc config RasMan start= AUTO");
-    cmd("sc start RasMan");
-    cmd("sc config TapiSrv start= AUTO");
-    cmd("sc start TapiSrv");
-    cmd("sc config MpsSvc start= AUTO");
-    cmd("sc start MpsSvc");
-    cmd("netsh advfirewall set allprofiles state on");
-    //3.
-    cmd("bcdedit /deletevalue nointegritychecks");
-    cmd("bcdedit /deletevalue loadoptions");
-    cmd("bcdedit /debug off");
-    cmd("bcdedit /deletevalue nx");
-    //4.
+    //检查路径是否正确
     QString tPath;
-    if( isSteamExisted() )
+    if( isSteamExisted() ){
         tPath = steamPath;
-    else if( isLauncherExisted() )
+        tPath.replace("steam.exe", "", Qt::CaseInsensitive);
+    }
+    else if( isLauncherExisted() ){
         tPath = launcherPath;
-    else
+        tPath.replace("csgolauncher.exe", "", Qt::CaseInsensitive);
+    }
+    else{
+        QMessageBox::warning(this, "提示", "未获得Steam或国服路径！");
         return;
+    }
+    //检查用到的批处理脚本
+    if( !QFile::exists( QCoreApplication::applicationDirPath() + "/SolveVAC.bat" ) ){
+        QMessageBox::warning(this, "提示", "SolveVAC.bat文件丢失！");
+        return;
+    }
 
-    tPath.replace("steam.exe", "bin/", Qt::CaseInsensitive);
-    //5.
-    cmd_dir("steamservice  /uninstall", tPath);
-    stall(100);
-    cmd("ping -n 3 127.0.0.1>nul");
-    stall(100);
-    cmd_dir("steamservice  /install", tPath);
-    stall(100);
-    //6.
-    cmd("sc config \"Steam Client Service\" start= AUTO");
-    cmd("sc start \"Steam Client Service\"");
-    //debug测试
-    QMessageBox::warning(this, "提示", "指令已全部执行，如果不好使请到QQ群反馈，见'关于'");
+    QString command = "\"" + QCoreApplication::applicationDirPath() + "/SolveVAC.bat\" " + tPath;
+    QString output = cmd( command );
+    ui->debug->setPlainText( output );
+    QMessageBox::warning(this, "提示", "已调出批处理脚本，如果不好使请到QQ群反馈，见'关于'");
 }
 
 //槽函数
@@ -1184,7 +1147,7 @@ QString MainWindow::cmd(QString command)
     p.waitForStarted();
     p.closeWriteChannel();  //关闭写通道 ，解决未响应问题
     p.waitForFinished();
-    temp = QString::fromLocal8Bit(p.readAll());
+    temp = QString::fromLocal8Bit(p.readAllStandardOutput());
     p.close();
     return temp;
 }

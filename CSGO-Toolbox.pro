@@ -41,7 +41,7 @@ QMAKE_CXXFLAGS+=/execution-charset:utf-8
 
 RC_CODEPAGE = 65001
 
-VERSION = 1.0.2b
+VERSION = 1.0.2c
 
 DEFINES += APP_VERSION=\\\"$$VERSION\\\"
 
