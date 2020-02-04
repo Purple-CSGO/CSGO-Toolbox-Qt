@@ -730,9 +730,14 @@ void MainWindow::solveVacIssue()
     cmd("bcdedit /debug off");
     cmd("bcdedit /deletevalue nx");
     //4.
-    if( !isSteamExisted() )
+    QString tPath;
+    if( isSteamExisted() )
+        tPath = steamPath;
+    else if( isLauncherExisted() )
+        tPath = launcherPath;
+    else
         return;
-    QString tPath = steamPath;
+
     tPath.replace("steam.exe", "bin/", Qt::CaseInsensitive);
     //5.
     cmd_dir("steamservice  /uninstall", tPath);
@@ -977,8 +982,12 @@ void MainWindow::on_antiHarmony_clicked()
           <<"pakxv_perfectworld_001"     <<  "pakxv_perfectworld_dir";
     //.vpk->.bak
     for (int i = 0; i < files.length() ; i++) {
-        if( QFile::exists( tPath + files.at(i) + ".vpk" ) )
+        if( QFile::exists( tPath + files.at(i) + ".vpk" ) ){
+            //先检测并删除.bak，否则rename不会覆盖
+            if( QFile::exists( tPath + files.at(i) + ".bak" ) )
+                QFile::remove( tPath + files.at(i) + ".bak" );
             QFile::rename(tPath + files.at(i) + ".vpk", tPath + files.at(i) + ".bak");
+        }
     }
 
     //TODO: 压缩后的操作
@@ -1002,8 +1011,12 @@ void MainWindow::on_reloadHarmony_clicked()
 
     //.bak->.vpk
     for (int i = 0; i < files.length() ; i++) {
-        if( QFile::exists( tPath + files.at(i) + ".bak" ) )
+        if( QFile::exists( tPath + files.at(i) + ".bak" ) ){
+            //先检测并删除.vpk，否则rename不会覆盖
+            if( QFile::exists( tPath + files.at(i) + ".vpk" ) )
+                QFile::remove( tPath + files.at(i) + ".vpk" );
             QFile::rename(tPath + files.at(i) + ".bak", tPath + files.at(i) + ".vpk");
+        }
     }
 
     //TODO: 压缩后的操作
