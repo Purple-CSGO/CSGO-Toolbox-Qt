@@ -395,7 +395,8 @@ void MainWindow::on_manualBtn_clicked()
 //手动选择csgo位置
 void MainWindow::on_manualCsgoBtn_clicked()
 {
-    QString tPath = QFileDialog::getOpenFileName(this, "选择csgo.exe的位置", tPath, "csgo.exe");
+    QString tPath = "";
+     tPath = QFileDialog::getOpenFileName(this, "选择csgo.exe的位置", tPath, "csgo.exe");
     if( !isCsgoExisted(tPath) ){
         return;
     }
@@ -712,8 +713,12 @@ void MainWindow::solveVacIssue()
     //            ? start /high steam -console -cafeapplaunch -forceservice
 
     //1.
-    cmd("taskkill /F /IM Steam.exe");
-    cmd("taskkill /F /IM csgolauncher.exe");
+    cmd("taskkill /f /t /im csgo.exe");
+    cmd("taskkill /f /t /im steam.exe");
+    cmd("taskkill /f /t /im csgolauncher.exe");
+    do{
+        stall(100);
+    }while( getProcessPath("csgo.exe").endsWith("exe") || getProcessPath("steam.exe").endsWith("exe") ||getProcessPath("csgolauncher.exe").endsWith("exe") );
     //2.
     cmd("sc config Netman start= AUTO");
     cmd("sc start Netman");
