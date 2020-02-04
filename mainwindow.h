@@ -80,6 +80,8 @@ private slots:
 
     void on_opencsgoDir_clicked();
 
+    void on_manualCsgoBtn_clicked();
+
 private:
     Ui::MainWindow *ui;
     //全局变量
@@ -136,6 +138,9 @@ private:
 
     void stall(int time);
     bool isDigitStr(QString src);
+    bool isSteamExisted(QString tPath = "default");
+    bool isLauncherExisted(QString tPath = "default");
+    bool isCsgoExisted(QString tPath = "default");
     QString getProcessPath(QString processName);
     QString cmd(QString command);
     QString cmd_dir(QString command, QString dir);

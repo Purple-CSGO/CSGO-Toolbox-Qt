@@ -552,13 +552,13 @@
      </attribute>
      <widget class="QPushButton" name="solveVAC">
       <property name="enabled">
-       <bool>false</bool>
+       <bool>true</bool>
       </property>
       <property name="geometry">
        <rect>
-        <x>290</x>
+        <x>10</x>
         <y>60</y>
-        <width>130</width>
+        <width>171</width>
         <height>40</height>
        </rect>
       </property>
@@ -571,7 +571,7 @@
        </font>
       </property>
       <property name="text">
-       <string>解决VAC验证</string>
+       <string>解决VAC验证(测试)</string>
       </property>
      </widget>
      <widget class="QPushButton" name="reloadHarmony">
@@ -618,7 +618,7 @@
      </widget>
      <widget class="QPlainTextEdit" name="debug">
       <property name="enabled">
-       <bool>false</bool>
+       <bool>true</bool>
       </property>
       <property name="geometry">
        <rect>
@@ -699,6 +699,27 @@ p, li { white-space: pre-wrap; }
       </property>
       <property name="placeholderText">
        <string> 手动输入SteamID</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="manualCsgoBtn">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>110</y>
+        <width>171</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <family>微软雅黑</family>
+        <pointsize>12</pointsize>
+        <weight>50</weight>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>手动选择CSGO路径</string>
       </property>
      </widget>
     </widget>
@@ -977,7 +998,7 @@ border-radius:10px;</string>
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'微软雅黑'; font-size:18pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'更纱黑体 SC';&quot;&gt;CSGO工具箱V1.0.3&lt;/span&gt;&lt;/p&gt;
+&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'更纱黑体 SC';&quot;&gt;CSGO工具箱V1.0.2a&lt;/span&gt;&lt;/p&gt;
 &lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;-----------------&lt;/p&gt;
 &lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'更纱黑体 SC';&quot;&gt;@Purp1e&lt;/span&gt;&lt;/p&gt;
 &lt;p align=&quot;center&quot; style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'更纱黑体 SC';&quot;&gt;&lt;br /&gt;&lt;/p&gt;
