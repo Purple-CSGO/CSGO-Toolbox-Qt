@@ -92,7 +92,13 @@ private:
     bool autoDownload;
     bool backupdataZipped;
 
-    ///核心功能
+    /**
+      * 程序的核心模块，是完成其他实际功能的基础
+      * 1. 程序启动/关闭时调用
+      * 2. 获取各种路径
+      * 3. 获取SteamID
+      */
+
     //程序启动/关闭时调用
     void setupUI();
     void readSetting();
@@ -107,7 +113,16 @@ private:
     //获取SteamID
     void getSteamID();
 
-    ///拓展功能
+    /**
+     *  拓展功能，基于核心模块和封装好的功能模块，完成具体的功能
+     *  包括：
+     *  1. 转换DEMO分享代码 获得真实下载链接
+     *  2. 修复VAC验证问题
+     *  3. 备份和还原设置（个人cfg文件夹）
+     *  4. 国服反和谐和反和谐恢复
+     *  5. 打开各种cfg文件夹和csgo位置
+     */
+
     //解决VAC验证问题
     void solveVacIssue();
     //分享代码转换直接下载链接
@@ -115,13 +130,10 @@ private:
     //备份
     void refreshBackup();
 
-    ///类似SLOT，发生变化时调用
-    void onSteamPathChanged();
-    void onCsgoPathChanged();
-    void onLauncherPathChanged();
-    void onSteamIDChanged();
+    /**
+     *  功能模块封装，给其他功能调用，减少代码冗余
+     */
 
-    ///功能封装，供其他函数调用
     void stall(int time);
     bool isDigitStr(QString src);
     QString getProcessPath(QString processName);
@@ -132,5 +144,15 @@ private:
     QString search_and_cut(QString &input, QString key);
     QString get_until(QString input, QString end);
     QString getValue(QString input, QString key);
+
+    /**
+     *  其他SLOT槽函数
+     */
+
+    void onSteamPathChanged();
+    void onCsgoPathChanged();
+    void onLauncherPathChanged();
+    void onSteamIDChanged();
+
 };
 #endif // MAINWINDOW_H

@@ -41,13 +41,12 @@ QMAKE_CXXFLAGS+=/execution-charset:utf-8
 
 RC_CODEPAGE = 65001
 
-VERSION = 1.0.2
+VERSION = 1.0.3
 
 DEFINES += APP_VERSION=\\\"$$VERSION\\\"
 
 QMAKE_TARGET_PRODUCT = "CSGO ToolBox"
 QMAKE_PROJECT_NAME = "CSGO工具箱"
-#QMAKE_LFLAGS += /MANIFESTUAC:"level='requireAdministrator'uiAccess='false'"
 
 RC_ICONS = logo.ico
 

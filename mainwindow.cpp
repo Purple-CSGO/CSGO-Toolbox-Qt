@@ -290,6 +290,12 @@ bool MainWindow::getLauncherPath()
     }
 }
 
+//获取国服启动器路径的槽函数
+void MainWindow::on_getLauncherPathBtn_clicked()
+{
+    getLauncherPath();
+}
+
 //获取CSGO路径
 bool MainWindow::getCsgoPath()
 {
@@ -479,6 +485,69 @@ void MainWindow::getSteamID()
     }
 }
 
+//选择按钮按下时切换SteamID
+void MainWindow::onTableBtnClicked()
+{
+    QPushButton *senderObj=qobject_cast<QPushButton*>(sender());
+    if(senderObj == nullptr){
+        return;
+    }
+    QModelIndex idx = ui->userdata->indexAt(QPoint(senderObj->frameGeometry().x(),senderObj->frameGeometry().y()));
+    int row = idx.row();
+    steamID = ui->userdata->item(row, 0)->text();
+    userName = ui->userdata->item(row, 1)->text();
+    //ui->debug->setPlainText( "SteamID <- " + steamID );
+    onSteamIDChanged();
+}
+
+//手动输入SteamID TODO: 进一步加强
+void MainWindow::on_ManualSteamID_clicked()
+{
+    QString tID = ui->textID->toPlainText();
+    if( tID.isEmpty() )
+        return;
+    else if( !isDigitStr(tID) || tID.length() < 8 || tID.length() > 10 ){
+        ui->debug->appendPlainText("ID格式有误！");
+        return;
+    }
+    QString tPath = "";
+    if( QFile(steamPath).exists() && steamPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
+        tPath = steamPath;
+        tPath.replace("Steam.exe", "userdata/" +tID, Qt::CaseInsensitive);
+        if( QFile::exists( tPath ) ){
+            steamID = tID;
+            onSteamIDChanged();
+            ui->debug->appendPlainText("成功！");
+            ui->textID->setText("");
+            return;
+        }
+        else
+            ui->debug->appendPlainText("userdata目录下检测不到该ID对应的文件夹，注意检测ID正误");
+    }
+    else if( QFile(launcherPath).exists() && launcherPath.endsWith("csgolauncher.exe", Qt::CaseInsensitive) ){
+        tPath = launcherPath;
+        tPath.replace("csgolauncher.exe", "userdata/" +tID, Qt::CaseInsensitive);
+        if( QFile::exists( tPath ) ){
+            steamID = tID;
+            onSteamIDChanged();
+            ui->debug->appendPlainText("成功！");
+            ui->textID->setText("");
+            return;
+        }
+        else
+            ui->debug->appendPlainText("userdata目录下检测不到该ID对应的文件夹，注意检测ID正误");
+    }
+    else{
+        ui->debug->appendPlainText("无Steam或国服启动器路径，无法识别，注意检测ID正误");
+    }
+}
+
+//按钮槽函数
+void MainWindow::on_getUserDataBtn_clicked()
+{
+    getSteamID();
+}
+
 /**
  *  拓展功能，基于核心模块和封装好的功能模块，完成具体的功能
  *  包括：
@@ -486,7 +555,7 @@ void MainWindow::getSteamID()
  *  2. 修复VAC验证问题
  *  3. 备份和还原设置（个人cfg文件夹）
  *  4. 国服反和谐和反和谐恢复
- *  5. 打开各种cfg文件夹
+ *  5. 打开各种cfg文件夹和csgo位置
  */
 
 /*------------------------------------------------------------------------------------*/
@@ -604,6 +673,12 @@ void MainWindow::on_autoClip_stateChanged(int arg1)
         autoClip = false;
 }
 
+//拖拽区域文字发生改变时调用 注意这里不可对dragArea赋非空值否则会死循环
+void MainWindow::on_dragArea_textChanged()
+{
+    sharecodeTransform();
+}
+
 /*------------------------------------------------------------------------------------*/
 //修复VAC验证问题 TODO:
 void MainWindow::solveVacIssue()
@@ -660,7 +735,7 @@ void MainWindow::solveVacIssue()
 
 }
 
-//信号槽
+//槽函数
 void MainWindow::on_solveVAC_clicked()
 {
     solveVacIssue();
@@ -755,6 +830,123 @@ void MainWindow::refreshBackup()
     ui->backupdata->setEditTriggers(QAbstractItemView::NoEditTriggers);
 }
 
+//恢复按钮槽函数
+void MainWindow::onRestoreBtnClicked()
+{
+    QPushButton *senderObj=qobject_cast<QPushButton*>(sender());
+    if(senderObj == nullptr){
+        return;
+    }
+    QModelIndex idx = ui->backupdata->indexAt(QPoint(senderObj->frameGeometry().x(),senderObj->frameGeometry().y()));
+    int row = idx.row();
+    //检查ID和Path
+    if( steamID.isEmpty() )
+        return;
+    QString tPath = "";
+    if( QFile(steamPath).exists() && steamPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
+        tPath = steamPath;
+        tPath.replace("steam.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
+    }
+    else if ( QFile(launcherPath).exists() && launcherPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
+        tPath = launcherPath;
+        tPath.replace("csgolauncher.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
+    }
+    else return;
+
+    QString zipPath = QCoreApplication::applicationDirPath() + "/备份/";
+    QString zipName = ui->backupdata->item(row, 0)->text();
+    QString bakName = "CFG备份.zip";
+    QString bakPath = tPath;
+    bakPath.replace("cfg", "");
+    QDir dir;
+    //如果路径不存在则创建
+    if (!dir.exists(zipPath))   dir.mkpath(zipPath);
+    if (!dir.exists(tPath))   dir.mkpath(tPath);
+    //如果备份文件不存在，报提示
+    if( !QFile(zipPath + zipName).exists() ){
+        QMessageBox::warning(this, "提示", "该备份已不存在，还原失败！");
+        return;
+    }
+
+    //把当前cfg文件夹内容备份在local中，删除cfg文件夹内容
+    JlCompress::compressDir(bakPath + bakName, tPath);
+    dir.setPath(tPath);
+    dir.removeRecursively();
+    //dir.mkdir(tPath);
+
+    JlCompress::extractDir(zipPath + zipName, tPath);
+    QMessageBox::warning(this, "提示", "还原成功！");
+    ui->debug->setPlainText( "row = " + QString::number(row) );
+}
+
+//删除按钮槽函数
+void MainWindow::onDeleteBtnClicked()
+{
+    QPushButton *senderObj=qobject_cast<QPushButton*>(sender());
+    if(senderObj == nullptr){
+        return;
+    }
+    QModelIndex idx = ui->backupdata->indexAt(QPoint(senderObj->frameGeometry().x(),senderObj->frameGeometry().y()));
+    int row = idx.row();
+    //检查ID和Path
+    if( steamID.isEmpty() )
+        return;
+    QString tPath = "";
+    if( QFile(steamPath).exists() && steamPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
+        tPath = steamPath;
+        tPath.replace("steam.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
+    }
+    else if ( QFile(launcherPath).exists() && launcherPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
+        tPath = launcherPath;
+        tPath.replace("csgolauncher.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
+    }
+    else return;
+
+    QString zipPath = QCoreApplication::applicationDirPath() + "/备份/";
+    QString zipName = ui->backupdata->item(row, 0)->text();
+    QDir dir;
+    //如果路径不存在则创建
+    if (!dir.exists(zipPath))   dir.mkpath(zipPath);
+    //如果备份文件不存在，报提示
+    if( !QFile(zipPath + zipName).exists() ){
+        QMessageBox::warning(this, "提示", "该备份已不存在，删除失败！");
+        return;
+    }
+
+    QFile::remove(zipPath + zipName);
+    ui->backupdata->removeRow(row);
+    QMessageBox::warning(this, "提示", "删除成功！");
+    refreshBackup();
+}
+
+//备份按钮槽函数
+void MainWindow::on_openBackupLoc_clicked()
+{
+    QString zipPath = QCoreApplication::applicationDirPath() + "/备份/";
+    QDir dir;
+    //如果路径不存在则创建
+    if (!dir.exists(zipPath))   dir.mkpath(zipPath);
+    QUrl url( "file:///" + zipPath);
+    QDesktopServices::openUrl(url);
+}
+
+//备份区域折叠/展开切换
+void MainWindow::on_zipBackupdata_clicked()
+{
+    if( backupdataZipped == true ){
+        ui->backupdata->setGeometry(10, 410, 410, 100);
+        ui->zipBackupdata->setText("↑");
+        ui->getUserDataBtn->setVisible(true);
+        backupdataZipped = false;
+    }
+    else{
+        ui->backupdata->setGeometry(10, 130, 410, 380);
+        ui->zipBackupdata->setText("↓");
+        ui->getUserDataBtn->setVisible(false);
+        backupdataZipped = true;
+    }
+}
+
 /*------------------------------------------------------------------------------------*/
 //国服反和谐
 void MainWindow::on_antiHarmony_clicked()
@@ -806,24 +998,6 @@ void MainWindow::on_reloadHarmony_clicked()
 }
 
 /*------------------------------------------------------------------------------------*/
-//打开csgo/cfg文件夹
-void MainWindow::on_opencsgocfg_clicked()
-{
-    if( !QFile::exists( csgoPath ) || !csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive ) ){
-        return;
-    }
-
-    QString tPath = csgoPath;
-    tPath.replace("csgo.exe", "csgo/cfg", Qt::CaseInsensitive);
-
-    // 检查目录是否存在，若不存在则新建
-    QDir dir;
-    if (!dir.exists(tPath))
-        dir.mkpath(tPath);
-
-    QUrl url( "file:///" + tPath );
-    QDesktopServices::openUrl(url);
-}
 
 //打开local/cfg文件夹
 void MainWindow::on_openlocalcfg_clicked()
@@ -858,6 +1032,38 @@ void MainWindow::on_openCNlocalcfg_clicked()
 
     QUrl url( "file:///" + tPath );
     QDesktopServices::openUrl(url);
+}
+
+//打开csgo/cfg文件夹
+void MainWindow::on_opencsgocfg_clicked()
+{
+    if( !QFile::exists( csgoPath ) || !csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive ) ){
+        return;
+    }
+
+    QString tPath = csgoPath;
+    tPath.replace("csgo.exe", "csgo/cfg", Qt::CaseInsensitive);
+
+    // 检查目录是否存在，若不存在则新建
+    QDir dir;
+    if (!dir.exists(tPath))
+        dir.mkpath(tPath);
+
+    QUrl url( "file:///" + tPath );
+    QDesktopServices::openUrl(url);
+}
+
+//打开csgo位置
+void MainWindow::on_opencsgoDir_clicked()
+{
+    if( QFile(csgoPath).exists() && csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive) ){
+        QString tPath = csgoPath;
+        tPath.replace("csgo.exe", "", Qt::CaseInsensitive);
+        QDir dir;
+        QUrl url( "file:///" + tPath);
+        QDesktopServices::openUrl(url);
+    }
+    else return;
 }
 
 /*------------------------------------------------------------------------------------*/
@@ -973,29 +1179,8 @@ QString MainWindow::getValue(QString input, QString key)
 /*------------------------------------------------------------------------------------*/
 
 /**
- *  SLOT槽函数和类槽函数（自定义onxxxclicked()）
+ *  其他SLOT槽函数
  */
-
-//选择按钮按下时切换SteamID
-void MainWindow::onTableBtnClicked()
-{
-    QPushButton *senderObj=qobject_cast<QPushButton*>(sender());
-    if(senderObj == nullptr){
-        return;
-    }
-    QModelIndex idx = ui->userdata->indexAt(QPoint(senderObj->frameGeometry().x(),senderObj->frameGeometry().y()));
-    int row = idx.row();
-    steamID = ui->userdata->item(row, 0)->text();
-    userName = ui->userdata->item(row, 1)->text();
-    //ui->debug->setPlainText( "SteamID <- " + steamID );
-    onSteamIDChanged();
-}
-
-//拖拽区域文字发生改变时调用 注意这里不可对dragArea赋非空值否则会死循环
-void MainWindow::on_dragArea_textChanged()
-{
-    sharecodeTransform();
-}
 
 void MainWindow::onSteamPathChanged()
 {
@@ -1031,184 +1216,6 @@ void MainWindow::onSteamIDChanged()
     }
     else
         ui->checkSteamID->setText("ID: " + steamID);
-}
-
-void MainWindow::onRestoreBtnClicked()
-{
-    QPushButton *senderObj=qobject_cast<QPushButton*>(sender());
-    if(senderObj == nullptr){
-        return;
-    }
-    QModelIndex idx = ui->backupdata->indexAt(QPoint(senderObj->frameGeometry().x(),senderObj->frameGeometry().y()));
-    int row = idx.row();
-    //检查ID和Path
-    if( steamID.isEmpty() )
-        return;
-    QString tPath = "";
-    if( QFile(steamPath).exists() && steamPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
-        tPath = steamPath;
-        tPath.replace("steam.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
-    }
-    else if ( QFile(launcherPath).exists() && launcherPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
-        tPath = launcherPath;
-        tPath.replace("csgolauncher.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
-    }
-    else return;
-
-    QString zipPath = QCoreApplication::applicationDirPath() + "/备份/";
-    QString zipName = ui->backupdata->item(row, 0)->text();
-    QString bakName = "CFG备份.zip";
-    QString bakPath = tPath;
-    bakPath.replace("cfg", "");
-    QDir dir;
-    //如果路径不存在则创建
-    if (!dir.exists(zipPath))   dir.mkpath(zipPath);
-    if (!dir.exists(tPath))   dir.mkpath(tPath);
-    //如果备份文件不存在，报提示
-    if( !QFile(zipPath + zipName).exists() ){
-        QMessageBox::warning(this, "提示", "该备份已不存在，还原失败！");
-        return;
-    }
-
-    //把当前cfg文件夹内容备份在local中，删除cfg文件夹内容
-    JlCompress::compressDir(bakPath + bakName, tPath);
-    dir.setPath(tPath);
-    dir.removeRecursively();
-    //dir.mkdir(tPath);
-
-    JlCompress::extractDir(zipPath + zipName, tPath);
-    QMessageBox::warning(this, "提示", "还原成功！");
-    ui->debug->setPlainText( "row = " + QString::number(row) );
-}
-
-void MainWindow::onDeleteBtnClicked()
-{
-    QPushButton *senderObj=qobject_cast<QPushButton*>(sender());
-    if(senderObj == nullptr){
-        return;
-    }
-    QModelIndex idx = ui->backupdata->indexAt(QPoint(senderObj->frameGeometry().x(),senderObj->frameGeometry().y()));
-    int row = idx.row();
-    //检查ID和Path
-    if( steamID.isEmpty() )
-        return;
-    QString tPath = "";
-    if( QFile(steamPath).exists() && steamPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
-        tPath = steamPath;
-        tPath.replace("steam.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
-    }
-    else if ( QFile(launcherPath).exists() && launcherPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
-        tPath = launcherPath;
-        tPath.replace("csgolauncher.exe", "userdata/" + steamID + "/730/local/cfg", Qt::CaseInsensitive);
-    }
-    else return;
-
-    QString zipPath = QCoreApplication::applicationDirPath() + "/备份/";
-    QString zipName = ui->backupdata->item(row, 0)->text();
-    QDir dir;
-    //如果路径不存在则创建
-    if (!dir.exists(zipPath))   dir.mkpath(zipPath);
-    //如果备份文件不存在，报提示
-    if( !QFile(zipPath + zipName).exists() ){
-        QMessageBox::warning(this, "提示", "该备份已不存在，删除失败！");
-        return;
-    }
-
-    QFile::remove(zipPath + zipName);
-    ui->backupdata->removeRow(row);
-    QMessageBox::warning(this, "提示", "删除成功！");
-    refreshBackup();
-}
-
-void MainWindow::on_openBackupLoc_clicked()
-{
-    QString zipPath = QCoreApplication::applicationDirPath() + "/备份/";
-    QDir dir;
-    //如果路径不存在则创建
-    if (!dir.exists(zipPath))   dir.mkpath(zipPath);
-    QUrl url( "file:///" + zipPath);
-    QDesktopServices::openUrl(url);
-}
-
-/*---------------------------------------------------------------------------------------------------*/
-//手动输入SteamID TODO: 进一步加强
-void MainWindow::on_ManualSteamID_clicked()
-{
-    QString tID = ui->textID->toPlainText();
-    if( tID.isEmpty() )
-        return;
-    else if( !isDigitStr(tID) || tID.length() < 8 || tID.length() > 10 ){
-        ui->debug->appendPlainText("ID格式有误！");
-        return;
-    }
-    QString tPath = "";
-    if( QFile(steamPath).exists() && steamPath.endsWith("steam.exe", Qt::CaseInsensitive) ){
-        tPath = steamPath;
-        tPath.replace("Steam.exe", "userdata/" +tID, Qt::CaseInsensitive);
-        if( QFile::exists( tPath ) ){
-            steamID = tID;
-            onSteamIDChanged();
-            ui->debug->appendPlainText("成功！");
-            ui->textID->setText("");
-            return;
-        }
-        else
-            ui->debug->appendPlainText("userdata目录下检测不到该ID对应的文件夹，注意检测ID正误");
-    }
-    else if( QFile(launcherPath).exists() && launcherPath.endsWith("csgolauncher.exe", Qt::CaseInsensitive) ){
-        tPath = launcherPath;
-        tPath.replace("csgolauncher.exe", "userdata/" +tID, Qt::CaseInsensitive);
-        if( QFile::exists( tPath ) ){
-            steamID = tID;
-            onSteamIDChanged();
-            ui->debug->appendPlainText("成功！");
-            ui->textID->setText("");
-            return;
-        }
-        else
-            ui->debug->appendPlainText("userdata目录下检测不到该ID对应的文件夹，注意检测ID正误");
-    }
-    else{
-        ui->debug->appendPlainText("无Steam或国服启动器路径，无法识别，注意检测ID正误");
-    }
-}
-
-void MainWindow::on_getUserDataBtn_clicked()
-{
-    getSteamID();
-}
-
-void MainWindow::on_getLauncherPathBtn_clicked()
-{
-    getLauncherPath();
-}
-
-void MainWindow::on_zipBackupdata_clicked()
-{
-    if( backupdataZipped == true ){
-        ui->backupdata->setGeometry(10, 410, 410, 100);
-        ui->zipBackupdata->setText("↑");
-        ui->getUserDataBtn->setVisible(true);
-        backupdataZipped = false;
-    }
-    else{
-        ui->backupdata->setGeometry(10, 130, 410, 380);
-        ui->zipBackupdata->setText("↓");
-        ui->getUserDataBtn->setVisible(false);
-        backupdataZipped = true;
-    }
-}
-
-void MainWindow::on_opencsgoDir_clicked()
-{
-    if( QFile(csgoPath).exists() && csgoPath.endsWith("csgo.exe", Qt::CaseInsensitive) ){
-        QString tPath = csgoPath;
-        tPath.replace("csgo.exe", "", Qt::CaseInsensitive);
-        QDir dir;
-        QUrl url( "file:///" + tPath);
-        QDesktopServices::openUrl(url);
-    }
-    else return;
 }
 
 /*
