@@ -21,6 +21,7 @@
 #include <QFont>
 #include <QScreen>
 #include "lib/JlCompress.h"
+#include "Windows.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -82,6 +83,26 @@ private slots:
 
     void on_manualCsgoBtn_clicked();
 
+    void on_high_clicked();
+
+    void on_balanced_clicked();
+
+    void on_powersave_clicked();
+
+    void on_Ryzen3000_clicked();
+
+    void on_RyzenEtc_clicked();
+
+    void on_allPlatform_clicked();
+
+    void on_LaunchPWrd1_clicked();
+
+    void on_LaunchWWd1_clicked();
+
+    void on_LaunchPWrd2_clicked();
+
+    void on_LaunchWWd2_clicked();
+
 private:
     Ui::MainWindow *ui;
     //全局变量
@@ -90,9 +111,12 @@ private:
     QString csgoPath;
     QString steamID;
     QString userName;
+    QString launchOption1;
+    QString launchOption2;
     bool autoClip;
     bool autoDownload;
     bool backupdataZipped;
+    short cpuType;
 
     /**
       * 程序的核心模块，是完成其他实际功能的基础
@@ -131,6 +155,9 @@ private:
     void sharecodeTransform();
     //备份
     void refreshBackup();
+
+    //获取电脑配置
+    void getPCconfig();
 
     /**
      *  功能模块封装，给其他功能调用，减少代码冗余

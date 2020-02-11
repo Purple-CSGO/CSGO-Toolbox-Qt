@@ -11,9 +11,12 @@ QString launcherPath = "";
 QString csgoPath = "";
 QString steamID = "";
 QString userName = "";
+QString launchOption1 = "";
+QString launchOption2 = "";
 bool autoClip = false;
 bool autoDownload = false;
 bool backupdataZipped = false;
+short cpuType = 0;
 
 //TODO: 加载过程的文字显示在Loading界面上
 MainWindow::MainWindow(QWidget *parent)
@@ -28,7 +31,7 @@ MainWindow::MainWindow(QWidget *parent)
     getCsgoPath();
     getSteamID();
     refreshBackup();
-    //ui->debug->setPlainText(QCoreApplication::applicationDirPath() + "/SolveVAC.bat");
+
 }
 
 MainWindow::~MainWindow()
@@ -75,6 +78,7 @@ void MainWindow::setupUI()
     ui->zipBackupdata->setFont(font2);
     ui->TabSetting->setFont(font2);
     ui->ManualSteamID->setFont(font2);
+    ui->manualCsgoBtn->setFont(font2);
     ui->antiHarmony->setFont(font2);
     ui->debug->setFont(font2);
     ui->reloadHarmony->setFont(font2);
@@ -118,6 +122,20 @@ void MainWindow::readSetting()
     autoClip = iniRead->value("autoClip").toBool();
     autoDownload = iniRead->value("autoDownload").toBool();
     iniRead->endGroup();
+
+    iniRead->beginGroup("powerplan");
+    cpuType = iniRead->value("cpuType").toUInt();
+    iniRead->endGroup();
+
+    iniRead->beginGroup("launchOption");
+    launchOption1 = iniRead->value("launchOption1").toString();
+    launchOption2 = iniRead->value("launchOption2").toString();
+    iniRead->endGroup();
+
+    //iniRead->beginGroup("  ");
+    //   = iniRead->value("  ").toString();
+    //iniRead->endGroup();
+
     //读入完成后删除指针
     delete iniRead;
 
@@ -144,6 +162,18 @@ void MainWindow::readSetting()
         ui->autoDownload->setCheckState(Qt::Checked);
     else
         ui->autoDownload->setCheckState(Qt::Unchecked);
+
+    //设置电源计划radiobutton
+    switch(cpuType){
+    case 1:ui->Ryzen3000->setChecked(true);on_Ryzen3000_clicked(); break;
+    case 2:ui->RyzenEtc->setChecked(true);on_RyzenEtc_clicked();break;
+    case 3:ui->allPlatform->setChecked(true);on_allPlatform_clicked();break;
+    default:break;
+    }
+
+    //设置启动项
+    ui->LaunchOpt1->setText( launchOption1 );
+    ui->LaunchOpt2->setText( launchOption2 );
 }
 
 //写入设置
@@ -156,6 +186,14 @@ void MainWindow::writeSetting()
         launcherPath = "";
     if( !isCsgoExisted() )
         csgoPath = "";
+
+    //判断powerplan相关变量是否正确
+    if( cpuType > 3 || cpuType < 0 )
+        cpuType = 0;
+
+    //读取启动项
+    launchOption1 = ui->LaunchOpt1->text();
+    launchOption2 = ui->LaunchOpt2->text();
 
     //写设置
     QSettings *IniWrite = new QSettings("./config.ini", QSettings::IniFormat);
@@ -181,6 +219,20 @@ void MainWindow::writeSetting()
     IniWrite->setValue("autoClip", autoClip);
     IniWrite->setValue("autoDownload", autoDownload);
     IniWrite->endGroup();
+
+    IniWrite->beginGroup("powerplan");
+    IniWrite->setValue("cpuType", cpuType);
+    IniWrite->endGroup();
+
+    IniWrite->beginGroup("launchOption");
+    IniWrite->setValue("launchOption1", launchOption1);
+    IniWrite->setValue("launchOption2", launchOption2);
+    IniWrite->endGroup();
+
+    //IniWrite->beginGroup("  ");
+    //IniWrite->setValue("  ", );
+    //IniWrite->endGroup();
+
     //写入完成后删除指针
     delete IniWrite;
 }
@@ -405,7 +457,7 @@ void MainWindow::on_manualCsgoBtn_clicked()
 }
 
 /*  3. 获取SteamID  */
-//获取SteamID，一般9位数字 TODO: 错误处理 &
+//获取SteamID32，32比特，一般9位数字   TODO: 改进算法
 void MainWindow::getSteamID()
 {
     QString fileName = "";
@@ -717,7 +769,6 @@ void MainWindow::solveVacIssue()
 
     QString command = "\"" + QCoreApplication::applicationDirPath() + "/SolveVAC.bat\" " + tPath;
     QString output = cmd( command );
-    ui->debug->setPlainText( output );
     QMessageBox::warning(this, "提示", "已调出批处理脚本，如果不好使请到QQ群反馈，见'关于'");
 }
 
@@ -728,7 +779,7 @@ void MainWindow::on_solveVAC_clicked()
 }
 
 /*------------------------------------------------------------------------------------*/
-//备份设置 TODO:
+//备份设置
 void MainWindow::on_backupSetting_clicked()
 {
     if( steamID.isEmpty() )
@@ -992,7 +1043,6 @@ void MainWindow::on_reloadHarmony_clicked()
 }
 
 /*------------------------------------------------------------------------------------*/
-
 //打开local/cfg文件夹
 void MainWindow::on_openlocalcfg_clicked()
 {
@@ -1058,6 +1108,95 @@ void MainWindow::on_opencsgoDir_clicked()
         QDesktopServices::openUrl(url);
     }
     else return;
+}
+
+/*------------------------------------------------------------------------------------*/
+//切换电源计划相关
+void MainWindow::on_high_clicked()
+{
+    //三代锐龙
+    if( ui->Ryzen3000->isChecked() )
+        cmd("powercfg.exe /S 9935e61f-1661-40c5-ae2f-8495027d5d5d");
+    //通用
+    else if( ui->RyzenEtc->isChecked() || ui->allPlatform->isChecked() )
+        cmd("powercfg.exe /S 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c");
+    else
+        QMessageBox::warning(this, "提示", "没有选择CPU类型！");
+}
+
+void MainWindow::on_balanced_clicked()
+{
+    //AMD
+    if( ui->Ryzen3000->isChecked() || ui->RyzenEtc->isChecked() )
+        cmd("powercfg.exe /S 9897998c-92de-4669-853f-b7cd3ecb2790");
+    //通用
+    else if( ui->allPlatform->isChecked() )
+        cmd("powercfg.exe /S 381b4222-f694-41f0-9685-ff5bb260df2e");
+    else
+        QMessageBox::warning(this, "提示", "没有选择CPU类型！");
+}
+
+void MainWindow::on_powersave_clicked()
+{
+    //通用
+    if( ui->Ryzen3000->isChecked() ||ui->RyzenEtc->isChecked() || ui->allPlatform->isChecked() )
+        cmd("powercfg.exe /S a1841308-3541-4fab-bc81-f71556f20b4a");
+    else
+        QMessageBox::warning(this, "提示", "没有选择CPU类型！");
+}
+
+void MainWindow::on_Ryzen3000_clicked()
+{
+    cpuType = 1;
+    //ui->high->setChecked(false);
+}
+
+void MainWindow::on_RyzenEtc_clicked()
+{
+    cpuType = 2;
+}
+
+void MainWindow::on_allPlatform_clicked()
+{
+    cpuType = 3;
+}
+
+/*------------------------------------------------------------------------------------*/
+//启动项相关
+void MainWindow::on_LaunchPWrd1_clicked()
+{
+    launchOption1 = ui->LaunchOpt1->text();
+    QUrl url( "steam://rungameid/730//-perfectworld " + launchOption1 );
+    QDesktopServices::openUrl(url);
+}
+
+void MainWindow::on_LaunchWWd1_clicked()
+{
+    launchOption1 = ui->LaunchOpt1->text();
+    QUrl url( "steam://rungameid/730//-worldwide " + launchOption1 );
+    QDesktopServices::openUrl(url);
+}
+
+void MainWindow::on_LaunchPWrd2_clicked()
+{
+    launchOption2 = ui->LaunchOpt2->text();
+    QUrl url( "steam://rungameid/730//-perfectworld " + launchOption2 );
+    QDesktopServices::openUrl(url);
+}
+
+void MainWindow::on_LaunchWWd2_clicked()
+{
+    launchOption1 = ui->LaunchOpt2->text();
+    QUrl url( "steam://rungameid/730//-worldwide " + launchOption2 );
+    QDesktopServices::openUrl(url);
+}
+
+/*------------------------------------------------------------------------------------*/
+//获取电脑配置信息
+void MainWindow::getPCconfig()
+{
+    //SYSTEM_INFO systeminfo;
+    //GetSystemInfo(&systeminfo);
 }
 
 /*------------------------------------------------------------------------------------*/
