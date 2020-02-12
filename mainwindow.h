@@ -25,7 +25,6 @@
 #include <QAction>
 #include "lib/JlCompress.h"
 #include "Windows.h"
-#include <Tlhelp32.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -117,6 +116,10 @@ private slots:
     //Kill进程csgo
     void killcsgo();
 
+    void on_save_clicked();
+
+    void on_pushButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     //全局变量
@@ -191,6 +194,7 @@ private:
     QString getProcessPath(QString processName);
     QString cmd(QString command);
     QString cmd_dir(QString command, QString dir);
+    QString wmic(QString name, QString info);
 
     //这三个函数封装用于读取 "关键字" "值"中的值 ->ID、启动项
     QString search_and_cut(QString &input, QString key);

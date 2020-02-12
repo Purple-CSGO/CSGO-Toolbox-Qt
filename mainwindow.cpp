@@ -315,7 +315,7 @@ void MainWindow::createTray()
     QObject::connect( quit, SIGNAL( triggered() ), qApp, SLOT( quit() ) );
 
     menu->setStyleSheet("QMenu::item {padding: 2px 22px 2px 12px;}QMenu::item:selected {"
-                                  "background-color: rgb(145, 201, 247);color: rgb(0, 0, 0);}");
+                        "background-color: rgb(145, 201, 247);color: rgb(0, 0, 0);}");
     menuLaunchOpt1->setStyleSheet("QMenu::item {padding: 2px 22px 2px 12px;}QMenu::item:selected {"
                                   "background-color: rgb(145, 201, 247);color: rgb(0, 0, 0);}");
     menuLaunchOpt2->setStyleSheet("QMenu::item {padding: 2px 22px 2px 12px;}QMenu::item:selected {"
@@ -354,6 +354,7 @@ void MainWindow::TrayIconAction(QSystemTrayIcon::ActivationReason reason)
     }
     else if ( reason == QSystemTrayIcon::DoubleClick )
         dispForm();
+
 }
 
 void MainWindow::on_checkboxTray_stateChanged(int arg1)
@@ -1320,8 +1321,36 @@ void MainWindow::on_LaunchWWd2_clicked()
 //获取电脑配置信息
 void MainWindow::getPCconfig()
 {
-    //SYSTEM_INFO systeminfo;
-    //GetSystemInfo(&systeminfo);
+    //ui->PCconfig->setText("正在获取。。。");
+    QString CPU = "", tGPU = "", GPU = "";
+
+    //系统
+    ui->PCconfig->append( "系统：\t" + wmic("os", "Caption") + " " + wmic("os", "OSArchitecture") );//32/64位
+    //ui->PCconfig->append( wmic("os", "RegisteredUser") );//用户名
+    //处理器
+    ui->PCconfig->append( "处理器：\t" + wmic("cpu", "name") );
+    ui->PCconfig->append( "\t" + wmic("cpu", "NumberOfCores")
+                          + "核" + wmic("cpu", "NumberOfLogicalProcessors") + "线程" );
+    //主板
+    ui->PCconfig->append( "主板：\t" + wmic("baseboard", "product") );
+    ui->PCconfig->append( "BIOS：\t" + wmic("bios", "SMBIOSBIOSVersion") );//bios版本
+    //显卡    TODO:
+    ui->PCconfig->append( "显卡：\t" + wmic("path win32_VideoController", "name ") );//显卡型号
+    //内存    TODO:
+    ui->PCconfig->append( wmic("memorychip", "PartNumber") );//内存型号
+    ui->PCconfig->append( wmic("memorychip", "Speed") );//内存频率
+    //硬盘    TODO:
+    ui->PCconfig->append( "硬盘：\t" +  wmic("diskdrive", "model") );
+
+    //显示器
+    QString Monitor = wmic("desktopmonitor", "PNPDeviceID");
+    Monitor.replace("DISPLAY\\", "");
+    Monitor = get_until(Monitor, "\\");
+    Monitor = "显示器：\t"  + Monitor + " " + wmic("path win32_VideoController", "CurrentHorizontalResolution")//长
+            + "x" + wmic("path win32_VideoController", "CurrentVerticalResolution")//宽
+            + "@" + wmic("path win32_VideoController", "CurrentRefreshRate") + "Hz";//刷新率
+
+    ui->PCconfig->append( Monitor );
 }
 
 /*------------------------------------------------------------------------------------*/
@@ -1429,6 +1458,16 @@ QString MainWindow::cmd_dir(QString command, QString dir)
     temp = QString::fromLocal8Bit(p.readAll());
     p.close();
     return temp;
+}
+
+//调用wmic获取硬件信息并提取 注意：调用cmd函数
+QString MainWindow::wmic(QString name, QString info)
+{
+    QString command = "wmic " + name + " get " + info ;
+    command = cmd(command);
+    command.replace(info, "", Qt::CaseInsensitive);
+    command = command.trimmed();
+    return command;
 }
 
 /*------------------------------------------------------------------------------------*/
@@ -1559,3 +1598,18 @@ void WriteLine()
 }
 
 */
+
+void MainWindow::on_save_clicked()
+{
+    getPCconfig();
+}
+
+void MainWindow::on_pushButton_clicked()
+{
+    QPixmap p = this->grab( QRect(10, 40, 415, 495) );
+    //p.save("123.png", "PNG");
+    QClipboard *clipboard = QGuiApplication::clipboard();
+    clipboard->setPixmap(p);
+
+    QMessageBox::warning(this, "提示", "截图已经复制到剪贴板");
+}
