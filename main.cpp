@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
     //主界面
     MainWindow w;
     w.setWindowTitle(appName + " - " + APP_VERSION);    //设置标题
-    w.show();
+    w.dispForm();
 
     //Loading结束
     screen.finish(&w);

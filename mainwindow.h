@@ -25,6 +25,7 @@
 #include <QAction>
 #include "lib/JlCompress.h"
 #include "Windows.h"
+#include <Tlhelp32.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -37,6 +38,9 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+    //显示窗体
+    void dispForm();
 
 private slots:
 
@@ -108,6 +112,11 @@ private slots:
 
     void on_checkboxTray_stateChanged(int arg1);
 
+    //对托盘图标操作的槽：本代码实现单机图标恢复窗口功能
+    void TrayIconAction(QSystemTrayIcon::ActivationReason reason);
+    //Kill进程csgo
+    void killcsgo();
+
 private:
     Ui::MainWindow *ui;
     //全局变量
@@ -123,6 +132,8 @@ private:
     bool backupdataZipped;
     bool useTray;
     short cpuType;
+    QSystemTrayIcon *tray;//托盘图标
+    QMenu *menu;
 
     /**
       * 程序的核心模块，是完成其他实际功能的基础
@@ -165,7 +176,9 @@ private:
     //获取电脑配置
     void getPCconfig();
 
+    //创建系统托盘
     void createTray();
+
     /**
      *  功能模块封装，给其他功能调用，减少代码冗余
      */

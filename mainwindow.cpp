@@ -33,7 +33,6 @@ MainWindow::MainWindow(QWidget *parent)
     getCsgoPath();
     getSteamID();
     refreshBackup();
-
 }
 
 MainWindow::~MainWindow()
@@ -274,27 +273,87 @@ void MainWindow::closeEvent(QCloseEvent *e)
 //托盘相关
 void MainWindow::createTray()
 {
-    QSystemTrayIcon *tray = new QSystemTrayIcon(this);//托盘图标
-    QMenu *menu = new QMenu(this);//托盘菜单
-    QAction *reset =new QAction(this);//菜单实现功能：恢复窗口
-    QAction *quit = new QAction(this);//菜单实现功能：退出程序
-    //***托盘***
-    tray->setIcon(QIcon(QPixmap(":/file/logo.ico")));//设定托盘图标，引号内是自定义的png图片路径
-    tray->show();//让托盘图标显示在系统托盘上
-    QObject::connect(tray,SIGNAL(activated(QSystemTrayIcon::ActivationReason)),this,SLOT(TrayIconAction(QSystemTrayIcon::ActivationReason)));//连接信号与槽，实现单击图标恢复窗口的功能，槽是自定义的槽
+    menu = new QMenu( this );//托盘菜单
+    QMenu *menuLaunchOpt1 = new QMenu( this );
+    QMenu *menuLaunchOpt2 = new QMenu( this );
+    QAction *LaunchPWrd1 = new QAction( this );
+    QAction *LaunchPWrd2 = new QAction( this );
+    QAction *LaunchWWd1 = new QAction( this );
+    QAction *LaunchWWd2 = new QAction( this );
+    QAction *killcsgoproc = new QAction( this );
+    //QAction *reset = new QAction( this );//菜单实现功能：恢复窗口
+    QAction *quit = new QAction( this );//菜单实现功能：退出程序
 
-    //***初始化托盘菜单及功能***
-    reset->setText("显示窗口");
-    QObject::connect(reset,SIGNAL(triggered()),this,SLOT(showNormal()));//菜单中的显示窗口，单击连接显示窗口
+    /****托盘*** */
+    tray = new QSystemTrayIcon( this );
+    tray->setIcon( QIcon( QPixmap( ":/file/logo.png" ) ) );
+    tray->show();
+    tray->setToolTip("CSGO工具箱");
 
-    quit->setText("退出程序");
-    QObject::connect(quit,SIGNAL(triggered()),qApp,SLOT(quit()));//菜单中的退出程序，单击连接退出</span>
-    //qApp，是Qt自带的demo中的知识点，查了一下文档，qApp是Qt中所有app的指针，关闭它就可以关闭当前的程序</span>
-    //之所以不用this，close()，是由于软件要求关闭改为最小化到托盘，所以close()的功能已经不再是关闭窗口的功能，所以要另寻方法
-    //***将定义好的菜单加入托盘的菜单模块中***
-    tray->setContextMenu(menu);
-    menu->addAction(reset);
-    menu->addAction(quit);
+    QObject::connect( tray, SIGNAL( activated( QSystemTrayIcon::ActivationReason ) ), this, SLOT( TrayIconAction( QSystemTrayIcon::ActivationReason ) ) );
+    /****初始化托盘菜单及功能****/
+
+    menuLaunchOpt1->setTitle("启动项①");
+    LaunchWWd1->setText("启动国际服");
+    LaunchPWrd1->setText("启动国服");
+    QObject::connect( LaunchWWd1, SIGNAL( triggered() ), this, SLOT( on_LaunchWWd1_clicked() ) );
+    QObject::connect( LaunchPWrd1, SIGNAL( triggered() ), this, SLOT( on_LaunchPWrd1_clicked() ) );
+
+    menuLaunchOpt2->setTitle("启动项②");
+    LaunchWWd2->setText("启动国际服");
+    LaunchPWrd2->setText("启动国服");
+    QObject::connect( LaunchWWd2, SIGNAL( triggered() ), this, SLOT( on_LaunchWWd2_clicked() ) );
+    QObject::connect( LaunchPWrd2, SIGNAL( triggered() ), this, SLOT( on_LaunchPWrd2_clicked() ) );
+
+    killcsgoproc->setText("关闭CSGO");
+    QObject::connect( killcsgoproc, SIGNAL( triggered() ), this, SLOT( killcsgo() ) );
+
+    //reset->setText( "打开主面板" );
+    //QObject::connect( reset, SIGNAL( triggered() ), this, SLOT( dispForm() ) );
+
+    quit->setText( "退出" );
+    QObject::connect( quit, SIGNAL( triggered() ), qApp, SLOT( quit() ) );
+
+    menu->setStyleSheet("QMenu::item {padding: 2px 22px 2px 12px;}QMenu::item:selected {"
+                                  "background-color: rgb(145, 201, 247);color: rgb(0, 0, 0);}");
+    menuLaunchOpt1->setStyleSheet("QMenu::item {padding: 2px 22px 2px 12px;}QMenu::item:selected {"
+                                  "background-color: rgb(145, 201, 247);color: rgb(0, 0, 0);}");
+    menuLaunchOpt2->setStyleSheet("QMenu::item {padding: 2px 22px 2px 12px;}QMenu::item:selected {"
+                                  "background-color: rgb(145, 201, 247);color: rgb(0, 0, 0);}");
+
+    tray->setContextMenu( menu );
+    menu->addMenu( menuLaunchOpt1 );
+    menuLaunchOpt1->addAction( LaunchWWd1 );
+    menuLaunchOpt1->addSeparator();
+    menuLaunchOpt1->addAction( LaunchPWrd1 );
+    menu->addSeparator();
+    menu->addMenu( menuLaunchOpt2 );
+    menuLaunchOpt2->addAction( LaunchWWd2 );
+    menuLaunchOpt2->addSeparator();
+    menuLaunchOpt2->addAction( LaunchPWrd2 );
+    menu->addSeparator();
+    menu->addAction( killcsgoproc );
+    menu->addSeparator();
+    //menu->addAction( reset );
+    menu->addAction( quit );
+}
+
+void MainWindow::dispForm()
+{
+    this->showNormal();
+    this->activateWindow();
+    this->setWindowState( (this->windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
+}
+
+void MainWindow::TrayIconAction(QSystemTrayIcon::ActivationReason reason)
+{   /* 如果对图标进行单击，则显示正常大小的窗口 */
+    if ( reason == QSystemTrayIcon::Trigger ){
+        QPoint mspos = cursor().pos();//获取鼠标位置
+        menu->show();
+        menu->move(mspos.rx(), mspos.ry() - 117 );
+    }
+    else if ( reason == QSystemTrayIcon::DoubleClick )
+        dispForm();
 }
 
 void MainWindow::on_checkboxTray_stateChanged(int arg1)
@@ -305,6 +364,10 @@ void MainWindow::on_checkboxTray_stateChanged(int arg1)
         useTray = false;
 }
 
+void MainWindow::killcsgo()
+{
+    cmd("taskkill /F /IM csgo.exe");
+}
 
 /*  2. 获取各种路径  */
 //获取Steam路径
@@ -467,7 +530,7 @@ bool MainWindow::getCsgoPath()
         for(int count = 10; count >0 && !QFile::exists( tPath ) ; count-- ){
             stall(100);
             tPath = getProcessPath("csgo.exe");
-            cmd("taskkill /f /t /im csgo.exe");
+            cmd("taskkill /F /IM csgo.exe");
         }
     }
 
@@ -1227,12 +1290,6 @@ void MainWindow::on_allPlatform_clicked()
 //启动项相关
 void MainWindow::on_LaunchPWrd1_clicked()
 {
-    QString tPath = getProcessPath("csgolauncher");
-    if( !isLauncherExisted(tPath) && isLauncherExisted() ){
-        QUrl url1( "file:///" + tPath );
-        QDesktopServices::openUrl(url1);
-    }
-    stall(200);
     launchOption1 = ui->LaunchOpt1->text();
     QUrl url( "steam://rungameid/730//-perfectworld " + launchOption1 );
     QDesktopServices::openUrl(url);
@@ -1240,12 +1297,6 @@ void MainWindow::on_LaunchPWrd1_clicked()
 
 void MainWindow::on_LaunchWWd1_clicked()
 {
-    QString tPath = getProcessPath("steam");
-    if( !isSteamExisted(tPath) && isSteamExisted() ){
-        QUrl url1( "file:///" + tPath );
-        QDesktopServices::openUrl(url1);
-    }
-    stall(200);
     launchOption1 = ui->LaunchOpt1->text();
     QUrl url( "steam://rungameid/730//-worldwide " + launchOption1 );
     QDesktopServices::openUrl(url);
@@ -1253,12 +1304,6 @@ void MainWindow::on_LaunchWWd1_clicked()
 
 void MainWindow::on_LaunchPWrd2_clicked()
 {
-    QString tPath = getProcessPath("csgolauncher");
-    if( !isLauncherExisted(tPath) && isLauncherExisted() ){
-        QUrl url1( "file:///" + tPath );
-        QDesktopServices::openUrl(url1);
-    }
-    stall(200);
     launchOption2 = ui->LaunchOpt2->text();
     QUrl url( "steam://rungameid/730//-perfectworld " + launchOption2 );
     QDesktopServices::openUrl(url);
@@ -1266,12 +1311,6 @@ void MainWindow::on_LaunchPWrd2_clicked()
 
 void MainWindow::on_LaunchWWd2_clicked()
 {
-    QString tPath = getProcessPath("steam");
-    if( !isSteamExisted(tPath) && isSteamExisted() ){
-        QUrl url1( "file:///" + tPath );
-        QDesktopServices::openUrl(url1);
-    }
-    stall(200);
     launchOption1 = ui->LaunchOpt2->text();
     QUrl url( "steam://rungameid/730//-worldwide " + launchOption2 );
     QDesktopServices::openUrl(url);
