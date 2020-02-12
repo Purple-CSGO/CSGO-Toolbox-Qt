@@ -101,13 +101,13 @@ private slots:
 
     void on_allPlatform_clicked();
 
-    void on_LaunchPWrd1_clicked();
+    void on_LaunchPwrd1_clicked();
 
-    void on_LaunchWWd1_clicked();
+    void on_LaunchWwd1_clicked();
 
-    void on_LaunchPWrd2_clicked();
+    void on_LaunchPwrd2_clicked();
 
-    void on_LaunchWWd2_clicked();
+    void on_LaunchWwd2_clicked();
 
     void on_checkboxTray_stateChanged(int arg1);
 
@@ -118,7 +118,13 @@ private slots:
 
     void on_save_clicked();
 
-    void on_pushButton_clicked();
+    void on_screenshotClip_clicked();
+
+    void launchWwd();
+    void launchPwrd();
+
+    void on_sliderLaunchFirst_valueChanged(int value);
+    void changeLaunchOpt();
 
 private:
     Ui::MainWindow *ui;
@@ -137,7 +143,7 @@ private:
     short cpuType;
     QSystemTrayIcon *tray;//托盘图标
     QMenu *menu;
-
+    QMenu *menuLaunchOpt;
     /**
       * 程序的核心模块，是完成其他实际功能的基础
       * 1. 程序启动/关闭时调用

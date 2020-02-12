@@ -17,6 +17,7 @@ bool autoClip = false;
 bool autoDownload = false;
 bool backupdataZipped = false;
 bool useTray = true;
+bool launchFirst = true;
 short cpuType = 0;
 
 //TODO: 加载过程的文字显示在Loading界面上
@@ -107,6 +108,7 @@ void MainWindow::setupUI()
 //读取设置
 void MainWindow::readSetting()
 {
+    bool t;
     QSettings *iniRead = new QSettings("./config.ini", QSettings::IniFormat);
     iniRead->setIniCodec("utf-8");     //解决乱码问题
 
@@ -133,6 +135,11 @@ void MainWindow::readSetting()
     iniRead->beginGroup("launchOption");
     launchOption1 = iniRead->value("launchOption1").toString();
     launchOption2 = iniRead->value("launchOption2").toString();
+    t = iniRead->value("launchFirst").toBool();
+    if( iniRead->value("launchFirst").toString().isEmpty() )
+        launchFirst = true;
+    else
+        launchFirst = t;
     iniRead->endGroup();
 
     iniRead->beginGroup("Tray");
@@ -181,6 +188,7 @@ void MainWindow::readSetting()
     //设置启动项
     ui->LaunchOpt1->setText( launchOption1 );
     ui->LaunchOpt2->setText( launchOption2 );
+    ui->sliderLaunchFirst->setValue( launchFirst );
 
     //设置托盘
     if( useTray == true )
@@ -207,6 +215,7 @@ void MainWindow::writeSetting()
     //读取启动项
     launchOption1 = ui->LaunchOpt1->text();
     launchOption2 = ui->LaunchOpt2->text();
+    launchFirst = ui->sliderLaunchFirst->value();
 
     //读取托盘设置
     useTray = ui->checkboxTray->checkState();
@@ -243,6 +252,7 @@ void MainWindow::writeSetting()
     IniWrite->beginGroup("launchOption");
     IniWrite->setValue("launchOption1", launchOption1);
     IniWrite->setValue("launchOption2", launchOption2);
+    IniWrite->setValue("launchFirst", launchFirst);
     IniWrite->endGroup();
 
     IniWrite->beginGroup("Tray");
@@ -270,20 +280,17 @@ void MainWindow::closeEvent(QCloseEvent *e)
     }
 }
 
-//托盘相关
+//右下角托盘相关
 void MainWindow::createTray()
 {
     menu = new QMenu( this );//托盘菜单
-    QMenu *menuLaunchOpt1 = new QMenu( this );
-    QMenu *menuLaunchOpt2 = new QMenu( this );
-    QAction *LaunchPWrd1 = new QAction( this );
-    QAction *LaunchPWrd2 = new QAction( this );
-    QAction *LaunchWWd1 = new QAction( this );
-    QAction *LaunchWWd2 = new QAction( this );
+    menuLaunchOpt = new QMenu( this );
+    QAction *changeOpt = new QAction( this );
+    QAction *LaunchPwrd = new QAction( this );
+    QAction *LaunchWwd = new QAction( this );
     QAction *killcsgoproc = new QAction( this );
     //QAction *reset = new QAction( this );//菜单实现功能：恢复窗口
     QAction *quit = new QAction( this );//菜单实现功能：退出程序
-
     /****托盘*** */
     tray = new QSystemTrayIcon( this );
     tray->setIcon( QIcon( QPixmap( ":/file/logo.png" ) ) );
@@ -293,17 +300,17 @@ void MainWindow::createTray()
     QObject::connect( tray, SIGNAL( activated( QSystemTrayIcon::ActivationReason ) ), this, SLOT( TrayIconAction( QSystemTrayIcon::ActivationReason ) ) );
     /****初始化托盘菜单及功能****/
 
-    menuLaunchOpt1->setTitle("启动项①");
-    LaunchWWd1->setText("启动国际服");
-    LaunchPWrd1->setText("启动国服");
-    QObject::connect( LaunchWWd1, SIGNAL( triggered() ), this, SLOT( on_LaunchWWd1_clicked() ) );
-    QObject::connect( LaunchPWrd1, SIGNAL( triggered() ), this, SLOT( on_LaunchPWrd1_clicked() ) );
+    if(launchFirst == true)
+        menuLaunchOpt->setTitle("当前启动项 ①");
+    else
+        menuLaunchOpt->setTitle("当前启动项 ②");
+    changeOpt->setText("切换");
+    QObject::connect( changeOpt, SIGNAL( triggered() ), this, SLOT( changeLaunchOpt() ) );
 
-    menuLaunchOpt2->setTitle("启动项②");
-    LaunchWWd2->setText("启动国际服");
-    LaunchPWrd2->setText("启动国服");
-    QObject::connect( LaunchWWd2, SIGNAL( triggered() ), this, SLOT( on_LaunchWWd2_clicked() ) );
-    QObject::connect( LaunchPWrd2, SIGNAL( triggered() ), this, SLOT( on_LaunchPWrd2_clicked() ) );
+    LaunchWwd->setText("启动国际服");
+    LaunchPwrd->setText("启动国服");
+    QObject::connect( LaunchWwd, SIGNAL( triggered() ), this, SLOT( launchWwd() ) );
+    QObject::connect( LaunchPwrd, SIGNAL( triggered() ), this, SLOT( launchPwrd() ) );
 
     killcsgoproc->setText("关闭CSGO");
     QObject::connect( killcsgoproc, SIGNAL( triggered() ), this, SLOT( killcsgo() ) );
@@ -316,21 +323,16 @@ void MainWindow::createTray()
 
     menu->setStyleSheet("QMenu::item {padding: 2px 22px 2px 12px;}QMenu::item:selected {"
                         "background-color: rgb(145, 201, 247);color: rgb(0, 0, 0);}");
-    menuLaunchOpt1->setStyleSheet("QMenu::item {padding: 2px 22px 2px 12px;}QMenu::item:selected {"
-                                  "background-color: rgb(145, 201, 247);color: rgb(0, 0, 0);}");
-    menuLaunchOpt2->setStyleSheet("QMenu::item {padding: 2px 22px 2px 12px;}QMenu::item:selected {"
-                                  "background-color: rgb(145, 201, 247);color: rgb(0, 0, 0);}");
+    menuLaunchOpt->setStyleSheet("QMenu::item {padding: 2px 22px 2px 12px;}QMenu::item:selected {"
+                                 "background-color: rgb(145, 201, 247);color: rgb(0, 0, 0);}");
 
     tray->setContextMenu( menu );
-    menu->addMenu( menuLaunchOpt1 );
-    menuLaunchOpt1->addAction( LaunchWWd1 );
-    menuLaunchOpt1->addSeparator();
-    menuLaunchOpt1->addAction( LaunchPWrd1 );
+    menu->addMenu( menuLaunchOpt );
+    menuLaunchOpt->addAction( changeOpt );
     menu->addSeparator();
-    menu->addMenu( menuLaunchOpt2 );
-    menuLaunchOpt2->addAction( LaunchWWd2 );
-    menuLaunchOpt2->addSeparator();
-    menuLaunchOpt2->addAction( LaunchPWrd2 );
+    menu->addAction( LaunchWwd );
+    //menu->addSeparator();
+    menu->addAction( LaunchPwrd );
     menu->addSeparator();
     menu->addAction( killcsgoproc );
     menu->addSeparator();
@@ -354,7 +356,6 @@ void MainWindow::TrayIconAction(QSystemTrayIcon::ActivationReason reason)
     }
     else if ( reason == QSystemTrayIcon::DoubleClick )
         dispForm();
-
 }
 
 void MainWindow::on_checkboxTray_stateChanged(int arg1)
@@ -368,6 +369,22 @@ void MainWindow::on_checkboxTray_stateChanged(int arg1)
 void MainWindow::killcsgo()
 {
     cmd("taskkill /F /IM csgo.exe");
+}
+
+void MainWindow::launchWwd()
+{
+    if(launchFirst == true)
+        on_LaunchWwd1_clicked();
+    else
+        on_LaunchWwd2_clicked();
+}
+
+void MainWindow::launchPwrd()
+{
+    if(launchFirst == true)
+        on_LaunchPwrd1_clicked();
+    else
+        on_LaunchPwrd2_clicked();
 }
 
 /*  2. 获取各种路径  */
@@ -1289,28 +1306,28 @@ void MainWindow::on_allPlatform_clicked()
 
 /*------------------------------------------------------------------------------------*/
 //启动项相关
-void MainWindow::on_LaunchPWrd1_clicked()
+void MainWindow::on_LaunchPwrd1_clicked()
 {
     launchOption1 = ui->LaunchOpt1->text();
     QUrl url( "steam://rungameid/730//-perfectworld " + launchOption1 );
     QDesktopServices::openUrl(url);
 }
 
-void MainWindow::on_LaunchWWd1_clicked()
+void MainWindow::on_LaunchWwd1_clicked()
 {
     launchOption1 = ui->LaunchOpt1->text();
     QUrl url( "steam://rungameid/730//-worldwide " + launchOption1 );
     QDesktopServices::openUrl(url);
 }
 
-void MainWindow::on_LaunchPWrd2_clicked()
+void MainWindow::on_LaunchPwrd2_clicked()
 {
     launchOption2 = ui->LaunchOpt2->text();
     QUrl url( "steam://rungameid/730//-perfectworld " + launchOption2 );
     QDesktopServices::openUrl(url);
 }
 
-void MainWindow::on_LaunchWWd2_clicked()
+void MainWindow::on_LaunchWwd2_clicked()
 {
     launchOption1 = ui->LaunchOpt2->text();
     QUrl url( "steam://rungameid/730//-worldwide " + launchOption2 );
@@ -1351,6 +1368,22 @@ void MainWindow::getPCconfig()
             + "@" + wmic("path win32_VideoController", "CurrentRefreshRate") + "Hz";//刷新率
 
     ui->PCconfig->append( Monitor );
+}
+
+//槽函数
+void MainWindow::on_save_clicked()
+{
+    getPCconfig();
+}
+//截图并复制
+void MainWindow::on_screenshotClip_clicked()
+{
+    QPixmap p = this->grab( QRect(10, 40, 415, 495) );
+    //p.save("123.png", "PNG");
+    QClipboard *clipboard = QGuiApplication::clipboard();
+    clipboard->setPixmap(p);
+
+    QMessageBox::warning(this, "提示", "截图已经复制到剪贴板");
 }
 
 /*------------------------------------------------------------------------------------*/
@@ -1599,17 +1632,24 @@ void WriteLine()
 
 */
 
-void MainWindow::on_save_clicked()
+void MainWindow::on_sliderLaunchFirst_valueChanged(int value)
 {
-    getPCconfig();
+    if( value > 0 ){
+        launchFirst = true;
+        ui->sliderLaunchFirst->setValue(1);
+        menuLaunchOpt->setTitle("当前启动项 ①");
+    }
+    else{
+        launchFirst = false;
+        ui->sliderLaunchFirst->setValue(0);
+        menuLaunchOpt->setTitle("当前启动项 ②");
+    }
 }
 
-void MainWindow::on_pushButton_clicked()
+void MainWindow::changeLaunchOpt()
 {
-    QPixmap p = this->grab( QRect(10, 40, 415, 495) );
-    //p.save("123.png", "PNG");
-    QClipboard *clipboard = QGuiApplication::clipboard();
-    clipboard->setPixmap(p);
-
-    QMessageBox::warning(this, "提示", "截图已经复制到剪贴板");
+    if( launchFirst == true )
+        on_sliderLaunchFirst_valueChanged( 0 );
+    else
+        on_sliderLaunchFirst_valueChanged( 1 );
 }
