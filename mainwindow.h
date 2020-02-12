@@ -20,6 +20,9 @@
 #include <QStandardItemModel>
 #include <QFont>
 #include <QScreen>
+#include <QSystemTrayIcon>
+#include <QMenu>
+#include <QAction>
 #include "lib/JlCompress.h"
 #include "Windows.h"
 
@@ -103,6 +106,8 @@ private slots:
 
     void on_LaunchWWd2_clicked();
 
+    void on_checkboxTray_stateChanged(int arg1);
+
 private:
     Ui::MainWindow *ui;
     //全局变量
@@ -116,6 +121,7 @@ private:
     bool autoClip;
     bool autoDownload;
     bool backupdataZipped;
+    bool useTray;
     short cpuType;
 
     /**
@@ -159,6 +165,7 @@ private:
     //获取电脑配置
     void getPCconfig();
 
+    void createTray();
     /**
      *  功能模块封装，给其他功能调用，减少代码冗余
      */

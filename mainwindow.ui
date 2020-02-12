@@ -91,7 +91,7 @@
      <enum>QTabWidget::Rounded</enum>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <property name="tabBarAutoHide">
      <bool>false</bool>
@@ -773,7 +773,7 @@ p, li { white-space: pre-wrap; }
          <x>150</x>
          <y>20</y>
          <width>73</width>
-         <height>91</height>
+         <height>92</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="exactPlan">
@@ -910,6 +910,19 @@ p, li { white-space: pre-wrap; }
         <string>启动国际服</string>
        </property>
       </widget>
+     </widget>
+     <widget class="QCheckBox" name="checkboxTray">
+      <property name="geometry">
+       <rect>
+        <x>250</x>
+        <y>450</y>
+        <width>171</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>关闭时隐藏到右下角</string>
+      </property>
      </widget>
     </widget>
     <widget class="QWidget" name="TabDemo">

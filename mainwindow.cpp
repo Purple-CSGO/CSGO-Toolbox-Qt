@@ -16,6 +16,7 @@ QString launchOption2 = "";
 bool autoClip = false;
 bool autoDownload = false;
 bool backupdataZipped = false;
+bool useTray = true;
 short cpuType = 0;
 
 //TODO: 加载过程的文字显示在Loading界面上
@@ -26,6 +27,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     setupUI();
+    createTray();
     readSetting();
     getSteamPath();
     getCsgoPath();
@@ -36,6 +38,8 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    if( useTray == true )
+        writeSetting();
     delete ui;
 }
 
@@ -132,6 +136,10 @@ void MainWindow::readSetting()
     launchOption2 = iniRead->value("launchOption2").toString();
     iniRead->endGroup();
 
+    iniRead->beginGroup("Tray");
+    useTray = iniRead->value("useTray").toBool();
+    iniRead->endGroup();
+
     //iniRead->beginGroup("  ");
     //   = iniRead->value("  ").toString();
     //iniRead->endGroup();
@@ -174,6 +182,12 @@ void MainWindow::readSetting()
     //设置启动项
     ui->LaunchOpt1->setText( launchOption1 );
     ui->LaunchOpt2->setText( launchOption2 );
+
+    //设置托盘
+    if( useTray == true )
+        ui->checkboxTray->setCheckState(Qt::Checked);
+    else
+        ui->checkboxTray->setCheckState(Qt::Unchecked);
 }
 
 //写入设置
@@ -194,6 +208,9 @@ void MainWindow::writeSetting()
     //读取启动项
     launchOption1 = ui->LaunchOpt1->text();
     launchOption2 = ui->LaunchOpt2->text();
+
+    //读取托盘设置
+    useTray = ui->checkboxTray->checkState();
 
     //写设置
     QSettings *IniWrite = new QSettings("./config.ini", QSettings::IniFormat);
@@ -229,6 +246,10 @@ void MainWindow::writeSetting()
     IniWrite->setValue("launchOption2", launchOption2);
     IniWrite->endGroup();
 
+    IniWrite->beginGroup("Tray");
+    IniWrite->setValue("useTray", useTray);
+    IniWrite->endGroup();
+
     //IniWrite->beginGroup("  ");
     //IniWrite->setValue("  ", );
     //IniWrite->endGroup();
@@ -240,9 +261,50 @@ void MainWindow::writeSetting()
 //关闭主界面时保存设置
 void MainWindow::closeEvent(QCloseEvent *e)
 {
-    writeSetting();
-    e->accept();
+    if(useTray == true){
+        e->ignore();//忽略关闭事件
+        hide();//隐藏窗口
+    }
+    else{
+        writeSetting();
+        e->accept();
+    }
 }
+
+//托盘相关
+void MainWindow::createTray()
+{
+    QSystemTrayIcon *tray = new QSystemTrayIcon(this);//托盘图标
+    QMenu *menu = new QMenu(this);//托盘菜单
+    QAction *reset =new QAction(this);//菜单实现功能：恢复窗口
+    QAction *quit = new QAction(this);//菜单实现功能：退出程序
+    //***托盘***
+    tray->setIcon(QIcon(QPixmap(":/file/logo.ico")));//设定托盘图标，引号内是自定义的png图片路径
+    tray->show();//让托盘图标显示在系统托盘上
+    QObject::connect(tray,SIGNAL(activated(QSystemTrayIcon::ActivationReason)),this,SLOT(TrayIconAction(QSystemTrayIcon::ActivationReason)));//连接信号与槽，实现单击图标恢复窗口的功能，槽是自定义的槽
+
+    //***初始化托盘菜单及功能***
+    reset->setText("显示窗口");
+    QObject::connect(reset,SIGNAL(triggered()),this,SLOT(showNormal()));//菜单中的显示窗口，单击连接显示窗口
+
+    quit->setText("退出程序");
+    QObject::connect(quit,SIGNAL(triggered()),qApp,SLOT(quit()));//菜单中的退出程序，单击连接退出</span>
+    //qApp，是Qt自带的demo中的知识点，查了一下文档，qApp是Qt中所有app的指针，关闭它就可以关闭当前的程序</span>
+    //之所以不用this，close()，是由于软件要求关闭改为最小化到托盘，所以close()的功能已经不再是关闭窗口的功能，所以要另寻方法
+    //***将定义好的菜单加入托盘的菜单模块中***
+    tray->setContextMenu(menu);
+    menu->addAction(reset);
+    menu->addAction(quit);
+}
+
+void MainWindow::on_checkboxTray_stateChanged(int arg1)
+{
+    if(arg1 == Qt::Checked )
+        useTray = true;
+    else
+        useTray = false;
+}
+
 
 /*  2. 获取各种路径  */
 //获取Steam路径
@@ -1165,6 +1227,12 @@ void MainWindow::on_allPlatform_clicked()
 //启动项相关
 void MainWindow::on_LaunchPWrd1_clicked()
 {
+    QString tPath = getProcessPath("csgolauncher");
+    if( !isLauncherExisted(tPath) && isLauncherExisted() ){
+        QUrl url1( "file:///" + tPath );
+        QDesktopServices::openUrl(url1);
+    }
+    stall(200);
     launchOption1 = ui->LaunchOpt1->text();
     QUrl url( "steam://rungameid/730//-perfectworld " + launchOption1 );
     QDesktopServices::openUrl(url);
@@ -1172,6 +1240,12 @@ void MainWindow::on_LaunchPWrd1_clicked()
 
 void MainWindow::on_LaunchWWd1_clicked()
 {
+    QString tPath = getProcessPath("steam");
+    if( !isSteamExisted(tPath) && isSteamExisted() ){
+        QUrl url1( "file:///" + tPath );
+        QDesktopServices::openUrl(url1);
+    }
+    stall(200);
     launchOption1 = ui->LaunchOpt1->text();
     QUrl url( "steam://rungameid/730//-worldwide " + launchOption1 );
     QDesktopServices::openUrl(url);
@@ -1179,6 +1253,12 @@ void MainWindow::on_LaunchWWd1_clicked()
 
 void MainWindow::on_LaunchPWrd2_clicked()
 {
+    QString tPath = getProcessPath("csgolauncher");
+    if( !isLauncherExisted(tPath) && isLauncherExisted() ){
+        QUrl url1( "file:///" + tPath );
+        QDesktopServices::openUrl(url1);
+    }
+    stall(200);
     launchOption2 = ui->LaunchOpt2->text();
     QUrl url( "steam://rungameid/730//-perfectworld " + launchOption2 );
     QDesktopServices::openUrl(url);
@@ -1186,6 +1266,12 @@ void MainWindow::on_LaunchPWrd2_clicked()
 
 void MainWindow::on_LaunchWWd2_clicked()
 {
+    QString tPath = getProcessPath("steam");
+    if( !isSteamExisted(tPath) && isSteamExisted() ){
+        QUrl url1( "file:///" + tPath );
+        QDesktopServices::openUrl(url1);
+    }
+    stall(200);
     launchOption1 = ui->LaunchOpt2->text();
     QUrl url( "steam://rungameid/730//-worldwide " + launchOption2 );
     QDesktopServices::openUrl(url);
