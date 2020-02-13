@@ -1466,10 +1466,14 @@ void MainWindow::getPCconfig()
 
         QStringList videoConfig = {"defaultres" , "defaultresheight", "fullscreen", "csm_quality_level", "gpu_mem_level", "cpu_level", "gpu_level", "mat_queue_mode",
                                    "mat_antialias", "mat_software_aa_strength", "mat_forceaniso", "mat_vsync", "mat_motion_blur_enabled"};
-
         QString resolution = "分辨率：\t\t", shadow = "全局阴影效果：\t", texture = "模型/贴图细节：\t", effect = "效果细节：\t",
                 light = "光影细节：\t", multi_core = "多核渲染：\t", MSAA = "多重采样抗锯齿模式:\t", FXAA = "快速近似抗锯齿：\t",
                 texture_filter = "贴图过滤模式：\t", vsync = "垂直同步：\t", Motionblur = "动态模糊：\t";
+        //适配Intel缩进
+        if( wmic("cpu", "name").contains("Intel", Qt::CaseInsensitive)  == true ){
+            effect.append("\t");light.append("\t");
+            multi_core.append("\t");vsync.append("\t");Motionblur.append("\t");
+        }
 
         resolution = resolution.append( iniRead->value( videoConfig.at(0) ).toString() + "x" + iniRead->value( videoConfig.at(1) ).toString() );
         switch ( iniRead->value( videoConfig.at(2)).toInt() ) {
