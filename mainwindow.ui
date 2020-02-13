@@ -91,7 +91,7 @@
      <enum>QTabWidget::Rounded</enum>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>0</number>
     </property>
     <property name="tabBarAutoHide">
      <bool>false</bool>
@@ -256,9 +256,9 @@
      <widget class="QPushButton" name="getUserDataBtn">
       <property name="geometry">
        <rect>
-        <x>309</x>
+        <x>289</x>
         <y>132</y>
-        <width>109</width>
+        <width>129</width>
         <height>30</height>
        </rect>
       </property>
@@ -271,7 +271,7 @@
        </font>
       </property>
       <property name="text">
-       <string>刷新</string>
+       <string>刷新ID</string>
       </property>
      </widget>
      <widget class="QPushButton" name="getLauncherPathBtn">
@@ -828,7 +828,7 @@ p, li { white-space: pre-wrap; }
       <property name="title">
        <string>启动项①</string>
       </property>
-      <widget class="QPushButton" name="LaunchWWd1">
+      <widget class="QPushButton" name="LaunchWwd1">
        <property name="geometry">
         <rect>
          <x>280</x>
@@ -854,7 +854,7 @@ p, li { white-space: pre-wrap; }
         <string/>
        </property>
       </widget>
-      <widget class="QPushButton" name="LaunchPWrd1">
+      <widget class="QPushButton" name="LaunchPwrd1">
        <property name="geometry">
         <rect>
          <x>150</x>
@@ -880,7 +880,7 @@ p, li { white-space: pre-wrap; }
       <property name="title">
        <string>启动项②</string>
       </property>
-      <widget class="QPushButton" name="LaunchPWrd2">
+      <widget class="QPushButton" name="LaunchPwrd2">
        <property name="geometry">
         <rect>
          <x>150</x>
@@ -903,7 +903,7 @@ p, li { white-space: pre-wrap; }
         </rect>
        </property>
       </widget>
-      <widget class="QPushButton" name="LaunchWWd2">
+      <widget class="QPushButton" name="LaunchWwd2">
        <property name="geometry">
         <rect>
          <x>280</x>

@@ -32,8 +32,11 @@ MainWindow::MainWindow(QWidget *parent)
     readSetting();
     getSteamPath();
     getCsgoPath();
-    getSteamID();
     refreshBackup();
+    if( SteamIDList.length() == 0 )
+        getSteamID();
+    else
+        setupUserdata();
 }
 
 MainWindow::~MainWindow()
@@ -119,21 +122,23 @@ void MainWindow::readSetting()
     csgoPath = iniRead->value("csgoPath").toString();
     iniRead->endGroup();
 
-    iniRead->beginGroup("user");
+    iniRead->beginGroup("User");
     userName = iniRead->value("userName").toString();
     steamID = iniRead->value("steamID").toString();
+    SteamIDList = iniRead->value("SteamIDList").toStringList();
+    PersonaNameList = iniRead->value("PersonaNameList").toStringList();
     iniRead->endGroup();
 
-    iniRead->beginGroup("auto");
+    iniRead->beginGroup("Auto");
     autoClip = iniRead->value("autoClip").toBool();
     autoDownload = iniRead->value("autoDownload").toBool();
     iniRead->endGroup();
 
-    iniRead->beginGroup("powerplan");
+    iniRead->beginGroup("Powerplan");
     cpuType = iniRead->value("cpuType").toUInt();
     iniRead->endGroup();
 
-    iniRead->beginGroup("launchOption");
+    iniRead->beginGroup("LaunchOption");
     launchOption1 = iniRead->value("launchOption1").toString();
     launchOption2 = iniRead->value("launchOption2").toString();
     t = iniRead->value("launchFirst").toBool();
@@ -236,21 +241,23 @@ void MainWindow::writeSetting()
     IniWrite->setValue("csgoPath", csgoPath);
     IniWrite->endGroup();
 
-    IniWrite->beginGroup("user");
+    IniWrite->beginGroup("User");
     IniWrite->setValue("userName", userName);
     IniWrite->setValue("steamID", steamID);
+    IniWrite->setValue("SteamIDList", SteamIDList);
+    IniWrite->setValue("PersonaNameList", PersonaNameList);
     IniWrite->endGroup();
 
-    IniWrite->beginGroup("auto");
+    IniWrite->beginGroup("Auto");
     IniWrite->setValue("autoClip", autoClip);
     IniWrite->setValue("autoDownload", autoDownload);
     IniWrite->endGroup();
 
-    IniWrite->beginGroup("powerplan");
+    IniWrite->beginGroup("Powerplan");
     IniWrite->setValue("cpuType", cpuType);
     IniWrite->endGroup();
 
-    IniWrite->beginGroup("launchOption");
+    IniWrite->beginGroup("LaunchOption");
     IniWrite->setValue("launchOption1", launchOption1);
     IniWrite->setValue("launchOption2", launchOption2);
     IniWrite->setValue("launchFirst", launchFirst);
@@ -353,7 +360,7 @@ void MainWindow::TrayIconAction(QSystemTrayIcon::ActivationReason reason)
     if ( reason == QSystemTrayIcon::Trigger ){
         QPoint mspos = cursor().pos();//获取鼠标位置
         menu->show();
-        menu->move(mspos.rx(), mspos.ry() - 117 );
+        menu->move(mspos.rx(), mspos.ry() - 140 );
     }
     else if ( reason == QSystemTrayIcon::DoubleClick )
         dispForm();
@@ -607,95 +614,104 @@ void MainWindow::getSteamID()
     QString fileName = "";
     if( isSteamExisted() ){
         fileName = steamPath;
-        fileName.replace("steam.exe" ,"config\\loginusers.vdf", Qt::CaseInsensitive );
+        fileName.replace("steam.exe" ,"userdata/", Qt::CaseInsensitive );
     }
     else if( isLauncherExisted() ){
         fileName = launcherPath;
-        fileName.replace("csgolauncher.exe" ,"config\\loginusers.vdf", Qt::CaseInsensitive );
+        fileName.replace("csgolauncher.exe" ,"userdata/", Qt::CaseInsensitive );
     }
-    else return;
+    else{
+        QMessageBox::warning(this, "提示", "没有获得Steam或国服客户端路径！");
+        return;
+    }
 
-    //communitypreferences  PersonaName  SteamID
-    QFile f( fileName );
-    if ( !f.exists() ) //文件不存在
-        return;
-    if ( !f.open(QIODevice::ReadOnly | QIODevice::Text) )
-        return;
-    QTextStream fStream(&f); //用文本流读取文件
-    fStream.setCodec("utf-8");  //解决乱码问题
-    QString content =  fStream.readAll();
-    f.close();
-    //去除无用字符
-    content.replace("\n", "");
-    content.replace("\r", "");
-    content.replace("\t", "");
-    search_and_cut(content, "users\"{");
-    QStringList SteamID,AccountName,PersonaName;
-    //获取数据
-    for(int i = 0 ; true ; i++){
-        search_and_cut(content, "\"");
-        //获取SteamID
-        QString t = get_until(content, "\"");
-        if( !t.isEmpty() ){
-            qulonglong temp = t.toULongLong();
-            temp -= 76561197960265728;
-            SteamID <<  QString::number( temp );
-        }
-        //获取账号名
-        t = getValue(content ,"AccountName");
-        if( !t.isEmpty() )
-            AccountName <<  t;
-        //获取用户昵称
-        t = getValue(content ,"PersonaName");
-        if( !t.isEmpty() )
-            PersonaName <<  t;
-        search_and_cut(content, "}");
-        if( content.startsWith("}") )
-            break;
+    //读取userdata下所有包含数字的文件名得到SteamID
+    QDir *dir=new QDir(fileName);
+    QStringList filter;
+    QString temp;
+    QList<QFileInfo> *fileInfo=new QList<QFileInfo>(dir->entryInfoList(filter));
+    for(int i = 0; i < fileInfo->count(); i++)
+    {
+        temp = QString::fromStdString( ( fileInfo->at(i).fileName().toStdString() ) );
+        if( isDigitStr( temp ) == true && !SteamIDList.contains( temp ))
+            SteamIDList << temp;
     }
+    for(int i = 0 ; i < SteamIDList.length() ; i++){
+        temp = fileName + SteamIDList.at(i) + "/config/localconfig.vdf";
+        QFile f( temp );
+        if ( !f.exists() ) //文件不存在
+            return;
+        if ( !f.open(QIODevice::ReadOnly | QIODevice::Text) )
+            return;
+        QTextStream fStream(&f); //用文本流读取文件
+        fStream.setCodec("utf-8");  //解决乱码问题
+        QString content =  fStream.readAll();
+        f.close();
+        //去除无用字符 查找昵称
+        content = get_until(content, "communitypreferences");
+        search_and_cut(content , "PersonaName");
+        content.remove("\n");
+        content.remove("\"");
+        content.remove("\t");
+        if( !PersonaNameList.contains( content ) )
+            PersonaNameList << content;
+    }
+
     //单用户时直接确定ID
-    if(SteamID.length() == 1){
-        steamID = SteamID.at(0);
-        userName = PersonaName.at(0);
+    if(SteamIDList.length() == 1){
+        steamID = SteamIDList.at(0);
+        userName = PersonaNameList.at(0);
         onSteamIDChanged();
-        //ui->debug->appendPlainText("检测到只有一个用户ID，已设置好SteamID！\n SteamID -< " + steamID);
+        QMessageBox::warning(this, "提示", "检测到只有一个用户ID，已设置好SteamID！\n SteamID = " + steamID);
     }
-    else{   //显示在tabview上 用户按一次按钮完成选择        //TODO: debug
-        QFont font;
-        font.setPixelSize(14);
-        short n = SteamID.length();
-        ui->userdata->setColumnCount(3);
-        ui->userdata->setRowCount(n);
-        ui->userdata->setColumnWidth(0,98);
-        ui->userdata->setColumnWidth(1,200);
-        ui->userdata->setColumnWidth(2,110);
-        //ui->userdata->setColumnWidth(3,83);
+    //显示在tabview上 用户按一次按钮完成选择        //TODO: debug
+    setupUserdata();
+}
 
-        QStringList header;
-        header <<  "SteamID" << "昵称" << "";
-        ui->userdata->setHorizontalHeaderLabels(header);
+void MainWindow::setupUserdata()
+{
+    QFont font;
+    font.setPixelSize(17);
+    short n = SteamIDList.length();
+    ui->userdata->setColumnCount(4);
+    ui->userdata->setRowCount(n);
+    ui->userdata->setColumnWidth(0,98);
+    ui->userdata->setColumnWidth(1,180);
+    ui->userdata->setColumnWidth(2,65);
+    ui->userdata->setColumnWidth(3,65);
 
-        for(short i = 0; i < n; i++){
-            ui->userdata->setRowHeight(i, 35);
-            ui->userdata->setItem(i, 0, new QTableWidgetItem(SteamID.at(i)));
-            ui->userdata->item(i,0)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
-            ui->userdata->setItem(i, 1, new QTableWidgetItem(PersonaName.at(i)));
-            //ui->userdata->item(i,1)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
-            QPushButton *button = new QPushButton();
-            connect(button, SIGNAL(clicked()), this, SLOT(onTableBtnClicked()));
-            // 在QTableWidget中添加控件
-            ui->userdata->setCellWidget(i, 2, button);
-            button->setProperty("id", i);
-            button->setProperty("text", "选择");
-            button->setProperty("status", "normal");
-            button->setFont(font);
-        }
-        ui->userdata->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    QStringList header;
+    header <<  "SteamID" << "昵称" << "" << "";
+    ui->userdata->setHorizontalHeaderLabels(header);
+
+    for(short i = 0; i < n; i++){
+        ui->userdata->setRowHeight(i, 35);
+        ui->userdata->setItem(i, 0, new QTableWidgetItem(SteamIDList.at(i)));
+        ui->userdata->item(i,0)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
+        ui->userdata->setItem(i, 1, new QTableWidgetItem(PersonaNameList.at(i)));
+        ui->userdata->item(i,1)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
+        QPushButton *chooseBtn = new QPushButton();
+        connect(chooseBtn, SIGNAL(clicked()), this, SLOT(onChooseBtnClicked()));
+        QPushButton *DeleteBtn = new QPushButton();
+        connect(DeleteBtn, SIGNAL(clicked()), this, SLOT(onUserDeleteBtnClicked()));
+        //在QTableWidget中添加控件：删除按钮
+        ui->userdata->setCellWidget(i, 2, DeleteBtn);
+        DeleteBtn->setProperty("id", i);
+        DeleteBtn->setProperty("text", "删除");
+        DeleteBtn->setProperty("status", "normal");
+        DeleteBtn->setFont(font);
+        //选择按钮
+        ui->userdata->setCellWidget(i, 3, chooseBtn);
+        chooseBtn->setProperty("id", i);
+        chooseBtn->setProperty("text", "选择");
+        chooseBtn->setProperty("status", "normal");
+        chooseBtn->setFont(font);
     }
+    ui->userdata->setEditTriggers(QAbstractItemView::NoEditTriggers);
 }
 
 //选择按钮按下时切换SteamID
-void MainWindow::onTableBtnClicked()
+void MainWindow::onChooseBtnClicked()
 {
     QPushButton *senderObj=qobject_cast<QPushButton*>(sender());
     if(senderObj == nullptr){
@@ -705,7 +721,30 @@ void MainWindow::onTableBtnClicked()
     int row = idx.row();
     steamID = ui->userdata->item(row, 0)->text();
     userName = ui->userdata->item(row, 1)->text();
-    //ui->debug->setPlainText( "SteamID <- " + steamID );
+    onSteamIDChanged();
+}
+
+//删除按钮按下时删除对应用户信息
+void MainWindow::onUserDeleteBtnClicked()
+{
+    QPushButton *senderObj=qobject_cast<QPushButton*>(sender());
+    if(senderObj == nullptr){
+        return;
+    }
+    QModelIndex idx = ui->userdata->indexAt(QPoint(senderObj->frameGeometry().x(),senderObj->frameGeometry().y()));
+    int row = idx.row();
+    QString temp = ui->userdata->item(row, 0)->text();
+    ui->userdata->removeRow(row);
+
+    row = SteamIDList.indexOf( temp );
+    if( SteamIDList.contains( temp ) ){
+        SteamIDList.removeAt( row );
+        PersonaNameList.removeAt( row );
+    }
+
+    if( temp == steamID )
+        steamID = "";
+
     onSteamIDChanged();
 }
 
@@ -984,7 +1023,7 @@ void MainWindow::refreshBackup()
     ui->backupdata->setColumnWidth(2,70);
 
     QFont font;
-    font.setPixelSize(14);
+    font.setPixelSize(17);
     QStringList header;
     header <<  "备份文件" << "" << "" ;
     ui->backupdata->setHorizontalHeaderLabels(header);
@@ -1007,7 +1046,7 @@ void MainWindow::refreshBackup()
         RestoreButton->setProperty("id", i);
         RestoreButton->setProperty("text", "还原");
         RestoreButton->setProperty("status", "normal");
-        DeleteButton->setFont(font);
+        RestoreButton->setFont(font);
     }
     ui->backupdata->setEditTriggers(QAbstractItemView::NoEditTriggers);
 }
@@ -1348,7 +1387,7 @@ void MainWindow::getPCconfig()
     ui->PCconfig->append( "系统：\t" + wmic("os", "Caption").remove("Microsoft ") + " " + wmic("os", "OSArchitecture") );//32/64位
     //ui->PCconfig->append( wmic("os", "RegisteredUser") );//用户名
     //处理器
-    ui->PCconfig->append( "处理器：\t" + get_until( wmic("cpu", "name").left(33), " @" ) );
+    ui->PCconfig->append( "处理器：\t" + get_until( wmic("cpu", "name").left(35), " @" ) );
     //ui->PCconfig->append( "\t" + wmic("cpu", "NumberOfCores")
     //                      + "核心" + wmic("cpu", "NumberOfLogicalProcessors") + "线程" );
     //主板
@@ -1397,7 +1436,7 @@ void MainWindow::getPCconfig()
         Drive = Drive + "\t" + Drivelist.at(i) + "\n";
     }
     Drive = Drive.trimmed();
-     if( Drivelist.length() > 2 )  Drive = Drive + " 等 总共" + QString::number(Drivelist.length()) + "块" ;
+    if( Drivelist.length() > 2 )  Drive = Drive + " 等 总共" + QString::number(Drivelist.length()) + "块" ;
     ui->PCconfig->append( Drive );//硬盘型号
 
     //显示器
@@ -1446,9 +1485,8 @@ void MainWindow::getPCconfig()
         //保存到video.ini下，读取得到
 
         QDir dir;
-        tPath = "./video.ini";
-        if (!dir.exists())  dir.remove("tPath");
-
+        //如果路径不存在则创建
+        if (!dir.exists())   dir.mkpath("./video.ini");
         QFile file("./video.ini");
 
         if (!file.open(QIODevice::WriteOnly|QIODevice::Text))
@@ -1839,4 +1877,3 @@ void WriteLine()
 }
 
 */
-

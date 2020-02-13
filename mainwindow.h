@@ -75,7 +75,9 @@ private slots:
 
     void on_solveVAC_clicked();
 
-    void onTableBtnClicked();
+    void onChooseBtnClicked();
+
+    void onUserDeleteBtnClicked();
 
     void onRestoreBtnClicked();
 
@@ -136,6 +138,7 @@ private:
     QString userName;
     QString launchOption1;
     QString launchOption2;
+    QStringList SteamIDList, PersonaNameList;
     bool autoClip;
     bool autoDownload;
     bool backupdataZipped;
@@ -164,6 +167,7 @@ private:
 
     //获取SteamID
     void getSteamID();
+    void setupUserdata();
 
     /**
      *  拓展功能，基于核心模块和封装好的功能模块，完成具体的功能
