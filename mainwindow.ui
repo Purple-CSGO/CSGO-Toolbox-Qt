@@ -41,7 +41,7 @@
    <property name="maximumSize">
     <size>
      <width>435</width>
-     <height>605</height>
+     <height>900</height>
     </size>
    </property>
    <property name="font">
@@ -73,7 +73,7 @@
     <property name="maximumSize">
      <size>
       <width>440</width>
-      <height>610</height>
+      <height>900</height>
      </size>
     </property>
     <property name="font">
@@ -91,7 +91,7 @@
      <enum>QTabWidget::Rounded</enum>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>3</number>
     </property>
     <property name="tabBarAutoHide">
      <bool>false</bool>
@@ -558,7 +558,7 @@
        <rect>
         <x>220</x>
         <y>10</y>
-        <width>201</width>
+        <width>200</width>
         <height>40</height>
        </rect>
       </property>
@@ -579,7 +579,7 @@
        <rect>
         <x>220</x>
         <y>110</y>
-        <width>201</width>
+        <width>200</width>
         <height>40</height>
        </rect>
       </property>
@@ -600,7 +600,7 @@
        <rect>
         <x>220</x>
         <y>60</y>
-        <width>201</width>
+        <width>200</width>
         <height>40</height>
        </rect>
       </property>
@@ -624,8 +624,8 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>201</width>
-        <height>41</height>
+        <width>200</width>
+        <height>40</height>
        </rect>
       </property>
       <property name="font">
@@ -648,7 +648,7 @@
        <rect>
         <x>150</x>
         <y>60</y>
-        <width>61</width>
+        <width>60</width>
         <height>40</height>
        </rect>
       </property>
@@ -669,7 +669,7 @@
        <rect>
         <x>10</x>
         <y>60</y>
-        <width>131</width>
+        <width>130</width>
         <height>40</height>
        </rect>
       </property>
@@ -706,7 +706,7 @@ p, li { white-space: pre-wrap; }
        <rect>
         <x>10</x>
         <y>110</y>
-        <width>201</width>
+        <width>200</width>
         <height>40</height>
        </rect>
       </property>
@@ -728,7 +728,7 @@ p, li { white-space: pre-wrap; }
         <x>10</x>
         <y>440</y>
         <width>231</width>
-        <height>121</height>
+        <height>120</height>
        </rect>
       </property>
       <property name="title">
@@ -744,6 +744,9 @@ p, li { white-space: pre-wrap; }
         </rect>
        </property>
        <layout class="QVBoxLayout" name="cpuType">
+        <property name="spacing">
+         <number>1</number>
+        </property>
         <item>
          <widget class="QRadioButton" name="Ryzen3000">
           <property name="text">
@@ -777,6 +780,9 @@ p, li { white-space: pre-wrap; }
         </rect>
        </property>
        <layout class="QVBoxLayout" name="exactPlan">
+        <property name="spacing">
+         <number>1</number>
+        </property>
         <item>
          <widget class="QRadioButton" name="high">
           <property name="layoutDirection">
@@ -815,8 +821,8 @@ p, li { white-space: pre-wrap; }
        <rect>
         <x>10</x>
         <y>160</y>
-        <width>411</width>
-        <height>121</height>
+        <width>410</width>
+        <height>120</height>
        </rect>
       </property>
       <property name="title">
@@ -827,8 +833,8 @@ p, li { white-space: pre-wrap; }
         <rect>
          <x>280</x>
          <y>70</y>
-         <width>121</width>
-         <height>41</height>
+         <width>120</width>
+         <height>40</height>
         </rect>
        </property>
        <property name="text">
@@ -840,8 +846,8 @@ p, li { white-space: pre-wrap; }
         <rect>
          <x>10</x>
          <y>30</y>
-         <width>391</width>
-         <height>31</height>
+         <width>390</width>
+         <height>30</height>
         </rect>
        </property>
        <property name="text">
@@ -853,8 +859,8 @@ p, li { white-space: pre-wrap; }
         <rect>
          <x>150</x>
          <y>70</y>
-         <width>121</width>
-         <height>41</height>
+         <width>120</width>
+         <height>40</height>
         </rect>
        </property>
        <property name="text">
@@ -867,8 +873,8 @@ p, li { white-space: pre-wrap; }
        <rect>
         <x>10</x>
         <y>310</y>
-        <width>411</width>
-        <height>121</height>
+        <width>410</width>
+        <height>120</height>
        </rect>
       </property>
       <property name="title">
@@ -879,8 +885,8 @@ p, li { white-space: pre-wrap; }
         <rect>
          <x>150</x>
          <y>70</y>
-         <width>121</width>
-         <height>41</height>
+         <width>120</width>
+         <height>40</height>
         </rect>
        </property>
        <property name="text">
@@ -892,8 +898,8 @@ p, li { white-space: pre-wrap; }
         <rect>
          <x>10</x>
          <y>30</y>
-         <width>391</width>
-         <height>31</height>
+         <width>390</width>
+         <height>30</height>
         </rect>
        </property>
       </widget>
@@ -902,8 +908,8 @@ p, li { white-space: pre-wrap; }
         <rect>
          <x>280</x>
          <y>70</y>
-         <width>121</width>
-         <height>41</height>
+         <width>120</width>
+         <height>40</height>
         </rect>
        </property>
        <property name="text">
@@ -915,9 +921,9 @@ p, li { white-space: pre-wrap; }
       <property name="geometry">
        <rect>
         <x>260</x>
-        <y>470</y>
-        <width>161</width>
-        <height>41</height>
+        <y>460</y>
+        <width>160</width>
+        <height>30</height>
        </rect>
       </property>
       <property name="text">
@@ -928,9 +934,9 @@ p, li { white-space: pre-wrap; }
       <property name="geometry">
        <rect>
         <x>260</x>
-        <y>510</y>
-        <width>141</width>
-        <height>51</height>
+        <y>500</y>
+        <width>140</width>
+        <height>50</height>
        </rect>
       </property>
       <property name="styleSheet">
@@ -1250,7 +1256,7 @@ p, li { white-space: pre-wrap; }
         <x>10</x>
         <y>10</y>
         <width>410</width>
-        <height>490</height>
+        <height>491</height>
        </rect>
       </property>
       <property name="verticalScrollBarPolicy">

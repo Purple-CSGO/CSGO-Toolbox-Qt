@@ -99,6 +99,7 @@ void MainWindow::setupUI()
     ui->labelDragArea->setFont(font60);
     ui->labelSharecode->setFont(font2);
     ui->textEdit->setFont(font6);
+    ui->PCconfig->setFont(font2);
     ui->labelDragArea->setAttribute(Qt::WA_TransparentForMouseEvents,true);
     ui->checkSteamPath->setAttribute(Qt::WA_TransparentForMouseEvents,true);
     ui->checkCsgoPath->setAttribute(Qt::WA_TransparentForMouseEvents,true);
@@ -614,6 +615,7 @@ void MainWindow::getSteamID()
     }
     else return;
 
+    //communitypreferences  PersonaName  SteamID
     QFile f( fileName );
     if ( !f.exists() ) //文件不存在
         return;
@@ -1189,7 +1191,7 @@ void MainWindow::on_reloadHarmony_clicked()
 //打开local/cfg文件夹
 void MainWindow::on_openlocalcfg_clicked()
 {
-    if( !isSteamExisted() ){
+    if( !isSteamExisted() || steamID.isEmpty() ){
         return;
     }
     QString tPath = steamPath;
@@ -1338,26 +1340,65 @@ void MainWindow::on_LaunchWwd2_clicked()
 //获取电脑配置信息
 void MainWindow::getPCconfig()
 {
-    //ui->PCconfig->setText("正在获取。。。");
-    QString CPU = "", tGPU = "", GPU = "";
+    //定义变量，CPU等可直接输出故不需要
+    QString GPU = "", MEM = "", MEMManu = "", MEMClockSpeed = "", Drive = "", tPath;
 
+    ui->PCconfig->setText("");
     //系统
-    ui->PCconfig->append( "系统：\t" + wmic("os", "Caption") + " " + wmic("os", "OSArchitecture") );//32/64位
+    ui->PCconfig->append( "系统：\t" + wmic("os", "Caption").remove("Microsoft ") + " " + wmic("os", "OSArchitecture") );//32/64位
     //ui->PCconfig->append( wmic("os", "RegisteredUser") );//用户名
     //处理器
-    ui->PCconfig->append( "处理器：\t" + wmic("cpu", "name") );
-    ui->PCconfig->append( "\t" + wmic("cpu", "NumberOfCores")
-                          + "核" + wmic("cpu", "NumberOfLogicalProcessors") + "线程" );
+    ui->PCconfig->append( "处理器：\t" + get_until( wmic("cpu", "name").left(33), " @" ) );
+    //ui->PCconfig->append( "\t" + wmic("cpu", "NumberOfCores")
+    //                      + "核心" + wmic("cpu", "NumberOfLogicalProcessors") + "线程" );
     //主板
     ui->PCconfig->append( "主板：\t" + wmic("baseboard", "product") );
-    ui->PCconfig->append( "BIOS：\t" + wmic("bios", "SMBIOSBIOSVersion") );//bios版本
+    ui->PCconfig->append( "BIOS：\t" + wmic("bios", "SMBIOSBIOSVersion") + " 版本" );//bios版本
     //显卡    TODO:
-    ui->PCconfig->append( "显卡：\t" + wmic("path win32_VideoController", "name ") );//显卡型号
+    GPU = wmic("path win32_VideoController", "name ");
+    QStringList GPUlist = GPU.split("\r\n");
+    GPU = "显卡：";
+    for( int i = 0; i < GPUlist.length() ; i++){
+        GPUlist[i] = GPUlist.at(i).trimmed();
+        GPU = GPU + "\t" + GPUlist.at(i) + "\n";
+    }
+    GPU = GPU.trimmed();
+    ui->PCconfig->append( GPU );//显卡型号
+
     //内存    TODO:
-    ui->PCconfig->append( wmic("memorychip", "PartNumber") );//内存型号
-    ui->PCconfig->append( wmic("memorychip", "Speed") );//内存频率
+    MEM = wmic("memorychip", "PartNumber");
+    MEMClockSpeed = wmic("memorychip", "Speed");
+    MEMManu = wmic("memorychip", "Manufacturer");
+    QStringList MEMlist = MEM.split("\r\n");
+    QStringList MEMClockSpeedlist = MEMClockSpeed.split("\r\n");
+    QStringList MEMManulist = MEMManu.split("\r\n");
+    MEM = "内存：";
+    for( int i = 0; i < MEMlist.length() && i < 2 ; i++){
+        MEMManulist[i] = MEMManulist.at(i).trimmed().left(14);
+        MEMlist[i] = MEMlist.at(i).trimmed().left(20);
+        MEM = MEM + "\t" + MEMManulist.at(i) + " " + MEMlist.at(i) + "\n";
+    }
+    MEM = MEM + "频率：\t";
+    for( int i = 0; i < MEMClockSpeedlist.length() && i < 2 ; i++){
+        MEMClockSpeedlist[i] = MEMClockSpeedlist.at(i).trimmed();
+        MEM = MEM + MEMClockSpeedlist.at(i) + "MHz / ";
+    }
+    MEM = MEM.trimmed();
+    MEM.chop(1);
+    if( MEMlist.length() > 2 )  MEM = MEM + "  等 总共" + QString::number(MEMlist.length()) + "条" ;
+    ui->PCconfig->append( MEM );//内存型号和频率
+
     //硬盘    TODO:
-    ui->PCconfig->append( "硬盘：\t" +  wmic("diskdrive", "model") );
+    Drive = wmic("diskdrive", "model");
+    QStringList Drivelist = Drive.split("\r\n");
+    Drive = "硬盘：";
+    for( int i = 0; i < Drivelist.length() && i < 2 ; i++){
+        Drivelist[i] = Drivelist.at(i).trimmed().left(23);
+        Drive = Drive + "\t" + Drivelist.at(i) + "\n";
+    }
+    Drive = Drive.trimmed();
+     if( Drivelist.length() > 2 )  Drive = Drive + " 等 总共" + QString::number(Drivelist.length()) + "块" ;
+    ui->PCconfig->append( Drive );//硬盘型号
 
     //显示器
     QString Monitor = wmic("desktopmonitor", "PNPDeviceID");
@@ -1368,6 +1409,139 @@ void MainWindow::getPCconfig()
             + "@" + wmic("path win32_VideoController", "CurrentRefreshRate") + "Hz";//刷新率
 
     ui->PCconfig->append( Monitor );
+
+    /*-----------------------  读取游戏视频设置  -----------------------*/
+    if( isSteamExisted() == true ){
+        tPath = steamPath;
+        tPath.replace("steam.exe", "", Qt::CaseInsensitive);
+    }
+    else if ( isLauncherExisted() == true ){
+        tPath = launcherPath;
+        tPath.replace("csgolauncher.exe", "", Qt::CaseInsensitive);
+    }
+    else
+        return;
+
+    if( !steamID.isEmpty() ){
+        ui->PCconfig->append("==============================");
+        tPath = tPath + "/userdata/" + steamID + "/730/local/cfg/video.txt";
+
+        QFile f( tPath );
+        if ( !f.exists() ) //文件不存在
+            return;
+        if ( !f.open(QIODevice::ReadOnly | QIODevice::Text) )
+            return;
+        QTextStream fStream(&f); //用文本流读取文件
+        fStream.setCodec("utf-8");  //解决乱码问题
+        QString content =  fStream.readAll();
+        f.close();
+        //将固定格式的video.txt内容转换为QSettings能识别的格式
+        search_and_cut(content, "{\n");
+        content.replace("}\n", "");
+        content.replace("\t\t", "=");
+        content.replace("\t", "");
+        content.replace("\"", "");
+        content.replace("\"", "");
+        content.replace("setting.", "");
+        //保存到video.ini下，读取得到
+
+        QDir dir;
+        tPath = "./video.ini";
+        if (!dir.exists())  dir.remove("tPath");
+
+        QFile file("./video.ini");
+
+        if (!file.open(QIODevice::WriteOnly|QIODevice::Text))
+            return;
+        else
+        {
+            QTextStream stream(&file);
+            stream << content;
+            stream.flush();
+            file.close();
+        }
+
+        QSettings *iniRead = new QSettings("./video.ini", QSettings::IniFormat);
+        iniRead->setIniCodec("utf-8");     //解决乱码问题
+
+        QStringList videoConfig = {"defaultres" , "defaultresheight", "fullscreen", "csm_quality_level", "gpu_mem_level", "cpu_level", "gpu_level", "mat_queue_mode",
+                                   "mat_antialias", "mat_software_aa_strength", "mat_forceaniso", "mat_vsync", "mat_motion_blur_enabled"};
+
+        QString resolution = "分辨率：\t\t", shadow = "全局阴影效果：\t", texture = "模型/贴图细节：\t", effect = "效果细节：\t",
+                light = "光影细节：\t", multi_core = "多核渲染：\t", MSAA = "多重采样抗锯齿模式:\t", FXAA = "快速近似抗锯齿：\t",
+                texture_filter = "贴图过滤模式：\t", vsync = "垂直同步：\t", Motionblur = "动态模糊：\t";
+
+        resolution = resolution.append( iniRead->value( videoConfig.at(0) ).toString() + "x" + iniRead->value( videoConfig.at(1) ).toString() );
+        switch ( iniRead->value( videoConfig.at(2)).toInt() ) {
+        case 0:resolution = resolution.append("  窗口") ;break;
+        case 1:resolution = resolution.append("  全屏") ;break;
+        }
+        ui->PCconfig->append( resolution );
+        switch ( iniRead->value( videoConfig.at(3)).toInt() ) {
+        case 0:shadow = shadow.append("非常低") ;break;
+        case 1:shadow = shadow.append("低") ;break;
+        case 2:shadow = shadow.append("中") ;break;
+        case 3:shadow = shadow.append("高") ;break;
+        }
+        ui->PCconfig->append( shadow );
+        switch ( iniRead->value( videoConfig.at(4)).toInt() ) {
+        case 0:texture = texture.append("低") ;break;
+        case 1:texture = texture.append("中") ;break;
+        case 2:texture = texture.append("高") ;break;
+        }
+        ui->PCconfig->append( texture );
+        switch ( iniRead->value( videoConfig.at(5)).toInt() ) {
+        case 0:effect = effect.append("低") ;break;
+        case 1:effect = effect.append("中") ;break;
+        case 2:effect = effect.append("高") ;break;
+        }
+        ui->PCconfig->append( effect );
+        switch ( iniRead->value( videoConfig.at(6)).toInt() ) {
+        case 0:light = light.append("低") ;break;
+        case 1:light = light.append("中") ;break;
+        case 2:light = light.append("高") ;break;
+        case 3:light = light.append("非常高") ;break;
+        }
+        ui->PCconfig->append( light );
+        switch ( iniRead->value( videoConfig.at(7)).toInt() ) {
+        case 0:multi_core = multi_core.append("关闭");break;
+        case 1:multi_core = multi_core.append("开启");break;
+        case 2:multi_core = multi_core.append("开启");break;
+        case -1:multi_core = multi_core.append("开启");break;
+        }
+        ui->PCconfig->append( multi_core );
+        switch ( iniRead->value( videoConfig.at(8)).toInt() ) {
+        case 0:MSAA = MSAA.append("关闭") ;break;
+        case 2:MSAA = MSAA.append("2X MSAA") ;break;
+        case 4:MSAA = MSAA.append("4X MSAA") ;break;
+        case 8:MSAA = MSAA.append("8X MSAA") ;break;
+        }
+        ui->PCconfig->append( MSAA );
+        switch ( iniRead->value( videoConfig.at(9)).toInt() ) {
+        case 0:FXAA = FXAA.append("关闭") ;break;
+        case 1:FXAA = FXAA.append("开启") ;break;
+        }
+        ui->PCconfig->append( FXAA );
+        switch ( iniRead->value( videoConfig.at(10)).toInt() ) {
+        case 0:texture_filter = texture_filter.append("双线性") ;break;
+        case 1:texture_filter = texture_filter.append("三线性") ;break;
+        case 2:texture_filter = texture_filter.append("异向 2X") ;break;
+        case 4:texture_filter = texture_filter.append("异向 4X") ;break;
+        case 8:texture_filter = texture_filter.append("异向 8X") ;break;
+        case 16:texture_filter = texture_filter.append("异向 16X") ;break;
+        }
+        ui->PCconfig->append( texture_filter );
+        switch ( iniRead->value( videoConfig.at(11)).toInt() ) {
+        case 0:vsync = vsync.append("关闭") ;break;
+        case 1:vsync = vsync.append("开启") ;break;
+        }
+        ui->PCconfig->append( vsync );
+        switch ( iniRead->value( videoConfig.at(12)).toInt() ) {
+        case 0:Motionblur = Motionblur.append("关闭") ;break;
+        case 1:Motionblur = Motionblur.append("开启") ;break;
+        }
+        ui->PCconfig->append( Motionblur );
+    }
 }
 
 //槽函数
@@ -1375,14 +1549,22 @@ void MainWindow::on_save_clicked()
 {
     getPCconfig();
 }
+
 //截图并复制
 void MainWindow::on_screenshotClip_clicked()
 {
-    QPixmap p = this->grab( QRect(10, 40, 415, 495) );
+    ui->PCconfig->setGeometry(10, 10, 410, 555);
+    ui->save->setVisible(false);
+    ui->screenshotClip->setVisible(false);
+    ui->PCconfig->moveCursor(QTextCursor::Start, QTextCursor::MoveAnchor);
+    QPixmap p = this->grab( QRect(10, 40, 415, 560) );
     //p.save("123.png", "PNG");
     QClipboard *clipboard = QGuiApplication::clipboard();
     clipboard->setPixmap(p);
 
+    ui->save->setVisible(true);
+    ui->screenshotClip->setVisible(true);
+    ui->PCconfig->setGeometry(10, 10, 410, 490);
     QMessageBox::warning(this, "提示", "截图已经复制到剪贴板");
 }
 
@@ -1572,6 +1754,28 @@ void MainWindow::onSteamIDChanged()
         ui->checkSteamID->setText("ID: " + steamID);
 }
 
+void MainWindow::on_sliderLaunchFirst_valueChanged(int value)
+{
+    if( value > 0 ){
+        launchFirst = true;
+        ui->sliderLaunchFirst->setValue(1);
+        menuLaunchOpt->setTitle("当前启动项 ①");
+    }
+    else{
+        launchFirst = false;
+        ui->sliderLaunchFirst->setValue(0);
+        menuLaunchOpt->setTitle("当前启动项 ②");
+    }
+}
+
+void MainWindow::changeLaunchOpt()
+{
+    if( launchFirst == true )
+        on_sliderLaunchFirst_valueChanged( 0 );
+    else
+        on_sliderLaunchFirst_valueChanged( 1 );
+}
+
 /*
     //自定义启动项指令 "F:\CSGO国服\csgolauncher.exe" -silent
     // 计算机\HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Valve\Steam\NSIS  Path
@@ -1632,24 +1836,3 @@ void WriteLine()
 
 */
 
-void MainWindow::on_sliderLaunchFirst_valueChanged(int value)
-{
-    if( value > 0 ){
-        launchFirst = true;
-        ui->sliderLaunchFirst->setValue(1);
-        menuLaunchOpt->setTitle("当前启动项 ①");
-    }
-    else{
-        launchFirst = false;
-        ui->sliderLaunchFirst->setValue(0);
-        menuLaunchOpt->setTitle("当前启动项 ②");
-    }
-}
-
-void MainWindow::changeLaunchOpt()
-{
-    if( launchFirst == true )
-        on_sliderLaunchFirst_valueChanged( 0 );
-    else
-        on_sliderLaunchFirst_valueChanged( 1 );
-}
