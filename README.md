@@ -1,5 +1,6 @@
 1. # CSGO工具箱 项目说明
-   > 2020.01.29 21pm last edited by Purp1e
+   
+   > Qt版项目已经搁置，正在使用Go+Wails+Vue重构。
 
    ## 一、CSGO工具箱介绍
 
